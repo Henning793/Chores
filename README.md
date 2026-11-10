@@ -1,56 +1,60 @@
-# Welcome to your Expo app 👋
+# Ukepenger
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+App for familier der barn krysser av oppgaver de har gjort hjemme, voksne godkjenner,
+og godkjente oppgaver blir til ukepenger (mandag til søndag). iPhone, Android og iPad.
 
-## Get started
+> **Status:** Prosjektoppsett og designforslag. Funksjonaliteten bygges først når designet er godkjent.
 
-1. Install dependencies
+## Teknologi
 
-   ```bash
-   npm install
-   ```
+- **App:** React Native med Expo (SDK 58) og Expo Router, TypeScript
+- **Backend:** Supabase (Postgres, Auth, Storage, Edge Functions)
+- **Innlogging:** e-post med engangskode og Google (Apple senere)
+- **Varsler:** Expo Push Notifications
+- **Distribusjon:** EAS Build til TestFlight (iOS) og intern testing (Google Play)
 
-2. Start the app
+## Mappestruktur
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+src/
+  app/                    Skjermer (Expo Router, filbasert navigasjon)
+    (auth)/               Logg inn, opprett familie, godta invitasjon
+    index.tsx             «Hvem bruker appen?» (profilvelger)
+    pin.tsx               PIN for voksenprofil
+    barn/[barnId]/        Barnets visning: oppgaver, historikk, sparemål
+    voksen/               Voksenvisning: godkjenning, registrering, oppgaver, barn, uker, innstillinger
+  components/             Gjenbrukbare UI-komponenter
+  features/               Logikk per område (auth, profiler, oppgaver, godkjenning, uker, gamification, offline)
+  lib/supabase.ts         Supabase-klient
+  types/database.ts       Genererte databasetyper
+supabase/
+  migrations/             SQL-migrasjoner (utkast)
+  functions/              Edge Functions (pushvarsel ved ny oppgave)
+docs/                     Design og beslutninger
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+## Kom i gang
 
-### Other setup steps
+```bash
+npm install
+cp .env.example .env      # fyll inn Supabase-URL og publishable-nøkkel
+npx expo start
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Databasen settes opp med Supabase CLI:
 
-## Learn more
+```bash
+npx supabase link --project-ref <prosjekt-id>
+npx supabase db push
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Viktige valg
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- Beløp lagres i **øre** som heltall.
+- Uker følger **norsk tid** og starter **mandag**. Ukesummer beregnes fra utførte oppgaver,
+  så ingenting nullstilles og all historikk beholdes.
+- Barn har **ikke** egne brukere. Enheten er logget inn med en voksen sin konto, og man velger profil på forsiden.
+- Hver voksen har sin egen **PIN** (lagret som hash på serveren, slik at den fungerer på alle familiens enheter).
+- Invitasjonslenker er gyldige i **2 timer**.
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Se [docs/design.md](docs/design.md) for skjermflyt og datamodell.
