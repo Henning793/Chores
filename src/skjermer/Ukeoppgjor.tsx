@@ -9,7 +9,8 @@ import { Avatar, Feilmelding, Knapp, Laster, Pille, Rad, Seksjon, Skjerm, T, Tom
 import { avstand } from '@/ui/tema';
 import { feiltekst } from '@/lib/firebase';
 
-export default function Ukeoppgjor() {
+/** Ukesummer per barn og «Marker som betalt». Vises under Barna → Uker. */
+export function Ukeoppgjor() {
   const barn = useBarn();
   const { uker, laster } = useUker();
   const betal = useMarkerBetalt();

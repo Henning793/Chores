@@ -17,6 +17,9 @@ const lys = {
   vent: '#B7791F',
   ventMyk: '#FFF1D6',
   paMerke: '#FFFFFF',
+  /** Bakgrunn og tekst for «Barna»-rommet (gult). Gjøremål bruker merke/merkeMyk (blått). */
+  barnRom: '#FFF1C9',
+  barnRomTekst: '#6B4A00',
 };
 
 const mork: typeof lys = {
@@ -36,6 +39,8 @@ const mork: typeof lys = {
   vent: '#F0B65A',
   ventMyk: '#3B2E14',
   paMerke: '#0E1422',
+  barnRom: '#3A3016',
+  barnRomTekst: '#FFCF5C',
 };
 
 export type Farger = typeof lys;

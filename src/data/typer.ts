@@ -66,3 +66,23 @@ export type Ukesum = {
   utbetalt: string | null;
   utbetaltAv: string | null;
 };
+
+export type Gjentakelse = 'dag' | 'uke' | 'maned' | 'ar';
+
+/** Felles gjøremål for de voksne. Dokument: familier/{id}/gjoremal/{id}. Barna ser dem aldri. */
+export type Gjoremal = {
+  id: string;
+  tittel: string;
+  beskrivelse: string | null;
+  /** Fristdato (YYYY-MM-DD, norsk tid) eller null. */
+  frist: string | null;
+  /** Klokkeslett (HH:MM) eller null for «hele dagen». */
+  fristKl: string | null;
+  gjentas: Gjentakelse | null;
+  fullfort: string | null;
+  fullfortAv: string | null;
+  opprettet: string;
+  opprettetAv: string;
+  /** Satt når en gjentakende oppgave er fullført og neste kopi er laget. */
+  nesteId: string | null;
+};

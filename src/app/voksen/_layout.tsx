@@ -1,44 +1,80 @@
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 
+import { useFristvarsler, useGjoremal } from '@/data/gjoremal';
 import { useProfil } from '@/data/profil';
 import { useUtforelser } from '@/data/utforelser';
-import { ByttProfilKnapp, FaneIkon } from '@/ui/hode';
+import { dagFor } from '@/lib/uke';
+import { ByttProfilKnapp, StrekIkon } from '@/ui/hode';
 import { useFarger } from '@/ui/tema';
 
+/**
+ * Voksenvisningen er delt i to rom:
+ * «Barna» (gult) for alt som handler om barna, og «Gjøremål» (blått) for de voksnes egen liste.
+ */
 export default function VoksenLayout() {
   const f = useFarger();
   const { aktiv } = useProfil();
   const utforelser = useUtforelser();
-  const venter = utforelser.data.filter((u) => u.status === 'venter').length;
+  const gjoremal = useGjoremal();
+  useFristvarsler(gjoremal.data);
 
   if (aktiv?.type !== 'voksen') return <Redirect href="/" />;
+
+  const venter = utforelser.data.filter((u) => u.status === 'venter').length;
+  const idag = dagFor();
+  const haster = (gjoremal.data ?? []).filter((g) => !g.fullfort && g.frist && g.frist <= idag).length;
+
+  const felles = {
+    headerRight: () => <ByttProfilKnapp />,
+    headerShadowVisible: false,
+    headerTitleStyle: { fontWeight: '800' as const, fontSize: 22 },
+    headerTitleAlign: 'left' as const,
+  };
 
   return (
     <Tabs
       screenOptions={{
-        headerRight: () => <ByttProfilKnapp />,
-        headerStyle: { backgroundColor: f.bg },
-        headerShadowVisible: false,
-        headerTitleStyle: { color: f.tekst, fontWeight: '700' },
-        tabBarActiveTintColor: f.merke,
+        tabBarStyle: { backgroundColor: f.flate, borderTopColor: f.linje, height: 64, paddingTop: 6 },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
         tabBarInactiveTintColor: f.dempet,
-        tabBarStyle: { backgroundColor: f.flate, borderTopColor: f.linje },
         sceneStyle: { backgroundColor: f.bg },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Til godkjenning',
-          tabBarLabel: 'Godkjenn',
-          tabBarIcon: () => <FaneIkon tegn="✅" />,
+          ...felles,
+          title: 'Barna',
+          headerStyle: { backgroundColor: f.barnRom },
+          headerTintColor: f.barnRomTekst,
+          tabBarActiveTintColor: f.barnRomTekst,
+          tabBarIcon: ({ focused, color }) => <StrekIkon navn="happy" fokus={focused} farge={color} pille={f.barnRom} />,
           tabBarBadge: venter > 0 ? venter : undefined,
         }}
       />
-      <Tabs.Screen name="registrer" options={{ title: 'Registrer oppgave', tabBarLabel: 'Registrer', tabBarIcon: () => <FaneIkon tegn="➕" /> }} />
-      <Tabs.Screen name="uker" options={{ title: 'Ukeoppgjør', tabBarLabel: 'Uker', tabBarIcon: () => <FaneIkon tegn="📅" /> }} />
-      <Tabs.Screen name="oppgaver" options={{ title: 'Oppgaver og beløp', tabBarLabel: 'Oppgaver', tabBarIcon: () => <FaneIkon tegn="🧹" /> }} />
-      <Tabs.Screen name="mer" options={{ title: 'Mer', tabBarIcon: () => <FaneIkon tegn="⚙️" /> }} />
+      <Tabs.Screen
+        name="gjoremal"
+        options={{
+          ...felles,
+          title: 'Gjøremål',
+          headerStyle: { backgroundColor: f.merkeMyk },
+          headerTintColor: f.merke,
+          tabBarActiveTintColor: f.merke,
+          tabBarIcon: ({ focused, color }) => <StrekIkon navn="clipboard" fokus={focused} farge={color} pille={f.merkeMyk} />,
+          tabBarBadge: haster > 0 ? haster : undefined,
+        }}
+      />
+      <Tabs.Screen
+        name="mer"
+        options={{
+          ...felles,
+          title: 'Mer',
+          headerStyle: { backgroundColor: f.bg },
+          headerTintColor: f.tekst,
+          tabBarActiveTintColor: f.tekst,
+          tabBarIcon: ({ focused, color }) => <StrekIkon navn="ellipsis-horizontal-circle" fokus={focused} farge={color} pille={f.linje} />,
+        }}
+      />
     </Tabs>
   );
 }

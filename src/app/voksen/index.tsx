@@ -1,117 +1,80 @@
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { useBarn, useOppgaver } from '@/data/familie';
-import { useUtforelseHandlinger, useUtforelser } from '@/data/utforelser';
+import { useBarn } from '@/data/familie';
+import { useUker } from '@/data/uker';
+import { useUtforelser } from '@/data/utforelser';
 import { kr } from '@/lib/penger';
-import { naarTekst } from '@/lib/uke';
-import { Avatar, Felt, Knapp, Kort, Laster, Pille, Seksjon, Skjerm, T, Tom } from '@/ui/komponenter';
-import { avstand } from '@/ui/tema';
+import { ukeStart } from '@/lib/uke';
+import { Barneoppgaver } from '@/skjermer/Barneoppgaver';
+import { FullfortOppgave } from '@/skjermer/FullfortOppgave';
+import { Godkjenn } from '@/skjermer/Godkjenn';
+import { Ukeoppgjor } from '@/skjermer/Ukeoppgjor';
+import { Avatar, Bryter, Laster } from '@/ui/komponenter';
+import { avstand, useFarger } from '@/ui/tema';
 
-export default function TilGodkjenning() {
-  const utforelser = useUtforelser();
+type Fane = 'godkjenn' | 'oppgaver' | 'uker';
+
+/** «Barna»: alt som handler om barna. Barna øverst, så Godkjenn · Oppgaver · Uker. */
+export default function Barna() {
+  const f = useFarger();
   const barn = useBarn();
-  const oppgaver = useOppgaver();
-  const { behandle } = useUtforelseHandlinger();
-  const [avviser, setAvviser] = useState<string | null>(null);
-  const [kommentar, setKommentar] = useState('');
+  const { uker } = useUker();
+  const utforelser = useUtforelser();
+  const [fane, setFane] = useState<Fane>('godkjenn');
+  const [fullfort, setFullfort] = useState<{ barnId?: string } | null>(null);
 
-  if (utforelser.isPending || barn.isPending || oppgaver.isPending) return <Laster />;
+  if (barn.isPending) return <Laster />;
 
-  const venter = utforelser.data.filter((u) => u.status === 'venter').sort((a, b) => a.utfort.localeCompare(b.utfort));
-  const nylig = utforelser.data.filter((u) => u.status !== 'venter').slice(0, 10);
-  const barnFor = (id: string) => barn.data?.find((b) => b.id === id);
-  const oppgaveFor = (id: string) => oppgaver.data?.find((o) => o.id === id);
+  const denne = ukeStart();
+  const tjent = (barnId: string) => uker.find((u) => u.barnId === barnId && u.ukeStart === denne)?.tjentOre ?? 0;
+  const venter = utforelser.data.filter((u) => u.status === 'venter').length;
 
   return (
-    <Skjerm>
-      {venter.length === 0 ? (
-        <Tom ikon="🎉" tittel="Ingenting venter" tekst="Når barna krysser av en oppgave, dukker den opp her." />
-      ) : (
-        <>
-          {venter.map((u) => {
-            const b = barnFor(u.barnId);
-            return (
-              <Kort key={u.id}>
-                <View style={{ flexDirection: 'row', gap: avstand.m, alignItems: 'center' }}>
-                  <Avatar navn={b?.navn ?? '?'} farge={b?.farge} bilde={b?.bilde} />
-                  <View style={{ flex: 1 }}>
-                    <T fet>
-                      {oppgaveFor(u.oppgaveId)?.tittel ?? 'Oppgave'}
-                      {u.merknad ? ` · ${u.merknad}` : ''}
-                    </T>
-                    <T dempet v="liten">
-                      {b?.navn} · {naarTekst(u.utfort)}
-                    </T>
-                  </View>
-                  <T fet>{kr(u.belopOre)}</T>
-                </View>
-                {avviser === u.id ? (
-                  <>
-                    <Felt
-                      value={kommentar}
-                      onChangeText={setKommentar}
-                      placeholder="Hva mangler? Barnet ser denne kommentaren."
-                      autoFocus
-                      maxLength={280}
-                    />
-                    <View style={{ flexDirection: 'row', gap: avstand.s }}>
-                      <Knapp tittel="Avbryt" variant="myk" stil={{ flex: 1 }} onPress={() => setAvviser(null)} />
-                      <Knapp
-                        tittel="Send avvisning"
-                        variant="nei"
-                        stil={{ flex: 1 }}
-                        deaktivert={kommentar.trim().length === 0}
-                        onPress={() => {
-                          behandle(u.id, false, kommentar);
-                          setAvviser(null);
-                        }}
-                      />
-                    </View>
-                  </>
-                ) : (
-                  <View style={{ flexDirection: 'row', gap: avstand.s }}>
-                    <Knapp
-                      tittel="Avvis"
-                      variant="nei"
-                      stil={{ flex: 1 }}
-                      onPress={() => {
-                        setKommentar('');
-                        setAvviser(u.id);
-                      }}
-                    />
-                    <Knapp tittel="Godkjenn" variant="ok" stil={{ flex: 1 }} onPress={() => behandle(u.id, true)} />
-                  </View>
-                )}
-              </Kort>
-            );
-          })}
-          {venter.length > 1 ? (
-            <Knapp
-              tittel={`Godkjenn alle (${venter.length})`}
-              variant="kant"
-              onPress={() => venter.forEach((u) => behandle(u.id, true))}
-            />
-          ) : null}
-        </>
-      )}
-
-      {nylig.length > 0 ? <Seksjon>Nylig behandlet</Seksjon> : null}
-      {nylig.map((u) => (
-        <View key={u.id} style={{ flexDirection: 'row', alignItems: 'center', gap: avstand.s }}>
-          <View style={{ flex: 1 }}>
-            <T v="liten" fet>
-              {barnFor(u.barnId)?.navn} · {oppgaveFor(u.oppgaveId)?.tittel}
-              {u.merknad ? ` · ${u.merknad}` : ''}
-            </T>
-            <T v="liten" dempet>
-              {naarTekst(u.utfort)}
-              {u.registrertAv ? ' · registrert av voksen' : ''}
-            </T>
-          </View>
-          <Pille tekst={u.status === 'godkjent' ? kr(u.belopOre) : 'Avvist'} type={u.status} />
-        </View>
-      ))}
-    </Skjerm>
+    <View style={{ flex: 1, backgroundColor: f.bg }}>
+      <View style={[styles.topp, { backgroundColor: f.barnRom }]}>
+        {barn.data.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.barna}>
+            {barn.data.map((b) => (
+              <Pressable
+                key={b.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${b.navn}, ${kr(tjent(b.id))} denne uka. Før opp en fullført oppgave.`}
+                onPress={() => setFullfort({ barnId: b.id })}
+                style={({ pressed }) => [styles.barn, { opacity: pressed ? 0.7 : 1 }]}>
+                <Avatar navn={b.navn} farge={b.farge} bilde={b.bilde} storrelse={44} />
+                <Text style={{ color: f.tekst, fontWeight: '800', fontSize: 13 }} numberOfLines={1}>
+                  {b.navn}
+                </Text>
+                <Text style={{ color: f.barnRomTekst, fontWeight: '700', fontSize: 12, fontVariant: ['tabular-nums'] }}>
+                  {kr(tjent(b.id))}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        ) : null}
+        <Bryter
+          verdi={fane}
+          onEndre={setFane}
+          valg={[
+            { verdi: 'godkjenn', tekst: 'Godkjenn', antall: venter },
+            { verdi: 'oppgaver', tekst: 'Oppgaver' },
+            { verdi: 'uker', tekst: 'Uker' },
+          ]}
+        />
+      </View>
+      <View style={{ flex: 1 }}>
+        {fane === 'godkjenn' ? <Godkjenn onFullfort={() => setFullfort({})} /> : null}
+        {fane === 'oppgaver' ? <Barneoppgaver /> : null}
+        {fane === 'uker' ? <Ukeoppgjor /> : null}
+      </View>
+      {fullfort ? <FullfortOppgave barnId={fullfort.barnId} onLukk={() => setFullfort(null)} /> : null}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  topp: { paddingHorizontal: avstand.l, paddingBottom: avstand.m, gap: avstand.m },
+  barna: { gap: avstand.l, paddingRight: avstand.l },
+  barn: { alignItems: 'center', gap: 2, minWidth: 56 },
+});
