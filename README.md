@@ -95,8 +95,20 @@ npm install
 npx expo start
 ```
 
-Appen bruker native moduler (bildevelger, varsler), så på telefon trengs en development build:
-`npx eas-cli@latest build --profile development`, eller `npx expo run:ios` på Mac.
+Appen bruker native moduler (bildevelger, varsler), så den må bygges med EAS for å kjøre på telefon.
+
+## Bygge appen (EAS)
+
+Byggingen startes fra GitHub, så du trenger ikke noe installert lokalt:
+
+1. Lag en token på [expo.dev](https://expo.dev) → Account settings → Access tokens.
+2. Legg den inn i GitHub: repoet → Settings → Secrets and variables → Actions → New repository secret,
+   med navnet `EXPO_TOKEN`.
+3. Gå til Actions → «Bygg app» → Run workflow, og velg plattform og profil.
+4. Følg bygget på expo.dev → Projects → ukepenger. Når det er ferdig, åpner du lenken eller QR-koden på telefonen.
+
+Profiler: `preview` er en vanlig testversjon, `development` er for utvikling med `npx expo start`,
+og `production` er for TestFlight og Google Play. iOS-bygg krever Apple Developer-konto.
 
 ## Sjekker
 
