@@ -1,38 +1,41 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
-import { useEffect, useMemo } from 'react';
+import { collection, deleteField, doc, query, setDoc, updateDoc, where } from 'firebase/firestore';
+import { useMemo } from 'react';
 
 import { useAuth } from '@/data/auth';
 import { useFamilieId } from '@/data/familie';
-import type { Oppgave, Ukeoppgjor, Utforelse } from '@/data/typer';
-import { leggIKo, useUtboks, vedSendt, type Jobb } from '@/data/utboks';
-import { supabase } from '@/lib/supabase';
+import { useLive } from '@/data/live';
+import type { Oppgave, Ukesum, Utforelse } from '@/data/typer';
+import { leggIKo, useUtboks, type Jobb } from '@/data/utboks';
+import { db } from '@/lib/firebase';
 import { leggTilDager, ukeStart } from '@/lib/uke';
 
 /**
- * Utførelser fra forrige uke og fremover, pluss alt som venter.
+ * Avkrysninger fra forrige uke og fremover, pluss alt som venter.
  * Endringer som ligger i køen på enheten vises som om de allerede er lagret.
  */
 export function useUtforelser() {
   const familieId = useFamilieId();
   const fra = leggTilDager(ukeStart(), -7);
-  const sporring = useQuery({
-    queryKey: ['utforelser', familieId, fra],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('utforelser')
-        .select('*')
-        .eq('familie_id', familieId)
-        .or(`uke_start.gte.${fra},status.eq.venter`)
-        .order('utfort', { ascending: false })
-        .limit(1000);
-      if (error) throw error;
-      return data as Utforelse[];
-    },
-  });
+  const samling = useMemo(() => collection(db, 'familier', familieId, 'utforelser'), [familieId]);
+  const nylige = useLive<Utforelse>(
+    ['utforelser', familieId, 'fra', fra],
+    useMemo(() => query(samling, where('ukeStart', '>=', fra)), [samling, fra]),
+  );
+  const venter = useLive<Utforelse>(
+    ['utforelser', familieId, 'venter'],
+    useMemo(() => query(samling, where('status', '==', 'venter')), [samling]),
+  );
   const ko = useUtboks();
-  const data = useMemo(() => medKo(sporring.data ?? [], ko), [sporring.data, ko]);
-  return { ...sporring, data };
+
+  const data = useMemo(() => {
+    const kart = new Map<string, Utforelse>();
+    for (const u of [...(venter.data ?? []), ...(nylige.data ?? [])]) kart.set(u.id, u);
+    return medKo([...kart.values()], ko.filter((j) => j.familieId === familieId));
+  }, [nylige.data, venter.data, ko, familieId]);
+
+  return { data, isPending: nylige.isPending && venter.isPending };
 }
 
 export function medKo(rader: Utforelse[], ko: Jobb[]): Utforelse[] {
@@ -41,12 +44,12 @@ export function medKo(rader: Utforelse[], ko: Jobb[]): Utforelse[] {
     if (j.type === 'kryss' || j.type === 'registrer') {
       if (ut.some((r) => r.id === j.rad.id)) continue;
       const godkjent = j.type === 'registrer';
-      ut.unshift({
+      ut.push({
         ...j.rad,
-        uke_start: ukeStart(new Date(j.rad.utfort)),
+        ukeStart: ukeStart(new Date(j.rad.utfort)),
         status: godkjent ? 'godkjent' : 'venter',
-        registrert_av: godkjent ? j.av : null,
-        behandlet_av: godkjent ? j.av : null,
+        registrertAv: godkjent ? j.av : null,
+        behandletAv: godkjent ? j.av : null,
         behandlet: godkjent ? j.rad.utfort : null,
         kommentar: null,
         ikkeSendt: true,
@@ -54,7 +57,7 @@ export function medKo(rader: Utforelse[], ko: Jobb[]): Utforelse[] {
     } else if (j.type === 'behandle') {
       ut = ut.map((r) =>
         r.id === j.utforelseId && r.status === 'venter'
-          ? { ...r, status: j.godkjenn ? 'godkjent' : 'avvist', kommentar: j.kommentar, behandlet_av: j.av, behandlet: j.tid, ikkeSendt: true }
+          ? { ...r, status: j.godkjenn ? 'godkjent' : 'avvist', kommentar: j.kommentar, behandletAv: j.av, behandlet: j.tid, ikkeSendt: true }
           : r,
       );
     } else if (j.type === 'angre') {
@@ -67,46 +70,30 @@ export function medKo(rader: Utforelse[], ko: Jobb[]): Utforelse[] {
 /** Handlinger som går via køen og virker uten nett. */
 export function useUtforelseHandlinger() {
   const familieId = useFamilieId();
-  const { session } = useAuth();
-  const meg = session?.user.id ?? '';
+  const { bruker } = useAuth();
+  const meg = bruker?.uid ?? '';
+
+  const ny = (barnId: string, oppgave: Oppgave, merknad: string | null, utfort: Date, nyttForsokAv: string | null) => ({
+    id: randomUUID(),
+    barnId,
+    oppgaveId: oppgave.id,
+    merknad: merknad?.trim() || null,
+    belopOre: oppgave.belopOre,
+    utfort: utfort.toISOString(),
+    nyttForsokAv,
+  });
 
   return {
     kryssAv(barnId: string, oppgave: Oppgave, merknad: string | null, nyttForsokAv: string | null = null) {
-      leggIKo({
-        jobbId: randomUUID(),
-        type: 'kryss',
-        rad: {
-          id: randomUUID(),
-          familie_id: familieId,
-          barn_id: barnId,
-          oppgave_id: oppgave.id,
-          merknad: merknad?.trim() || null,
-          belop_ore: oppgave.belop_ore,
-          utfort: new Date().toISOString(),
-          nytt_forsok_av: nyttForsokAv,
-        },
-      });
+      leggIKo({ jobbId: randomUUID(), familieId, type: 'kryss', rad: ny(barnId, oppgave, merknad, new Date(), nyttForsokAv) });
     },
     registrer(barnId: string, oppgave: Oppgave, merknad: string | null, utfort: Date) {
-      leggIKo({
-        jobbId: randomUUID(),
-        type: 'registrer',
-        av: meg,
-        rad: {
-          id: randomUUID(),
-          familie_id: familieId,
-          barn_id: barnId,
-          oppgave_id: oppgave.id,
-          merknad: merknad?.trim() || null,
-          belop_ore: oppgave.belop_ore,
-          utfort: utfort.toISOString(),
-          nytt_forsok_av: null,
-        },
-      });
+      leggIKo({ jobbId: randomUUID(), familieId, type: 'registrer', av: meg, rad: ny(barnId, oppgave, merknad, utfort, null) });
     },
     behandle(utforelseId: string, godkjenn: boolean, kommentar: string | null = null) {
       leggIKo({
         jobbId: randomUUID(),
+        familieId,
         type: 'behandle',
         utforelseId,
         godkjenn,
@@ -116,76 +103,43 @@ export function useUtforelseHandlinger() {
       });
     },
     angre(utforelseId: string) {
-      leggIKo({ jobbId: randomUUID(), type: 'angre', utforelseId });
+      leggIKo({ jobbId: randomUUID(), familieId, type: 'angre', utforelseId });
     },
   };
 }
 
 /** Ukesummer for alle barn og alle uker (historikk). */
-export function useUkeoppgjor() {
+export function useUkesummer() {
   const familieId = useFamilieId();
-  return useQuery({
-    queryKey: ['ukeoppgjor', familieId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('ukeoppgjor')
-        .select('*')
-        .eq('familie_id', familieId)
-        .order('uke_start', { ascending: false });
-      if (error) throw error;
-      return data as Ukeoppgjor[];
-    },
-  });
+  const q = useMemo(() => query(collection(db, 'familier', familieId, 'uker')), [familieId]);
+  return useLive<Ukesum>(['uker', familieId], q);
 }
 
 export function useMarkerBetalt() {
-  const qc = useQueryClient();
   const familieId = useFamilieId();
-  const { session } = useAuth();
+  const { bruker } = useAuth();
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (v: { barnId: string; ukeStart: string; belopOre: number }) => {
-      const { error } = await supabase.from('utbetalinger').insert({
-        familie_id: familieId,
-        barn_id: v.barnId,
-        uke_start: v.ukeStart,
-        belop_ore: v.belopOre,
-        utbetalt_av: session!.user.id,
-      });
-      if (error && error.code !== '23505') throw error;
+      setDoc(
+        doc(db, 'familier', familieId, 'uker', `${v.barnId}_${v.ukeStart}`),
+        { barnId: v.barnId, ukeStart: v.ukeStart, utbetaltOre: v.belopOre, utbetalt: new Date().toISOString(), utbetaltAv: bruker!.uid },
+        { merge: true },
+      ).catch((e) => console.warn('Lagring feilet', e));
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['ukeoppgjor', familieId] }),
   });
 }
 
 export function useAngreBetalt() {
-  const qc = useQueryClient();
   const familieId = useFamilieId();
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (v: { barnId: string; ukeStart: string }) => {
-      const { error } = await supabase.from('utbetalinger').delete().eq('barn_id', v.barnId).eq('uke_start', v.ukeStart);
-      if (error) throw error;
+      updateDoc(doc(db, 'familier', familieId, 'uker', `${v.barnId}_${v.ukeStart}`), {
+        utbetaltOre: deleteField(),
+        utbetalt: deleteField(),
+        utbetaltAv: deleteField(),
+      }).catch((e) => console.warn('Lagring feilet', e));
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['ukeoppgjor', familieId] }),
   });
-}
-
-/** Henter nye data når noen i familien krysser av eller godkjenner, og når køen er sendt. */
-export function useSanntid() {
-  const familieId = useFamilieId();
-  const qc = useQueryClient();
-  useEffect(() => {
-    const oppdater = () => {
-      qc.invalidateQueries({ queryKey: ['utforelser', familieId] });
-      qc.invalidateQueries({ queryKey: ['ukeoppgjor', familieId] });
-    };
-    vedSendt(oppdater);
-    const kanal = supabase
-      .channel(`utforelser-${familieId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'utforelser', filter: `familie_id=eq.${familieId}` }, oppdater)
-      .subscribe();
-    return () => {
-      vedSendt(() => {});
-      void supabase.removeChannel(kanal);
-    };
-  }, [familieId, qc]);
 }

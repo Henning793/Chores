@@ -11,6 +11,7 @@ import { AuthProvider, useAuth } from '@/data/auth';
 import { useMeg } from '@/data/familie';
 import { ProfilProvider, useProfil } from '@/data/profil';
 import { lastUtboks } from '@/data/utboks';
+import { useVarsler } from '@/data/varsler';
 import { Laster } from '@/ui/komponenter';
 import { useFarger } from '@/ui/tema';
 
@@ -25,6 +26,7 @@ const persister = createAsyncStoragePersister({ storage: AsyncStorage });
 
 export default function RootLayout() {
   const skjema = useColorScheme();
+  useVarsler();
   useEffect(() => {
     void lastUtboks();
   }, []);
@@ -44,11 +46,11 @@ export default function RootLayout() {
 
 function Navigasjon() {
   const f = useFarger();
-  const { session, laster } = useAuth();
+  const { bruker, laster } = useAuth();
   const meg = useMeg();
   const profil = useProfil();
 
-  const innlogget = !!session;
+  const innlogget = !!bruker;
   const harFamilie = !!meg.data;
 
   if (laster || !profil.klar || (innlogget && meg.isPending)) return <Laster />;

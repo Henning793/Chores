@@ -22,18 +22,18 @@ export default function BarnHjem() {
 
   if (oppgaver.isPending) return <Laster />;
 
-  const mine = utforelser.data.filter((u) => u.barn_id === barnId);
+  const mine = utforelser.data.filter((u) => u.barnId === barnId);
   const uke = ukeStart();
-  const denneUka = mine.filter((u) => u.uke_start === uke);
-  const tjent = denneUka.filter((u) => u.status === 'godkjent').reduce((s, u) => s + u.belop_ore, 0);
-  const venterOre = denneUka.filter((u) => u.status === 'venter').reduce((s, u) => s + u.belop_ore, 0);
+  const denneUka = mine.filter((u) => u.ukeStart === uke);
+  const tjent = denneUka.filter((u) => u.status === 'godkjent').reduce((s, u) => s + u.belopOre, 0);
+  const venterOre = denneUka.filter((u) => u.status === 'venter').reduce((s, u) => s + u.belopOre, 0);
   const stjerner = denneUka.filter((u) => u.status === 'godkjent').length;
   const pa_rad = dagerPaRad(mine);
   const iDag = dagFor();
   // Dagens avkrysninger, pluss eldre som venter eller er avvist uten nytt forsøk.
-  const provdIgjen = new Set(mine.map((u) => u.nytt_forsok_av).filter(Boolean));
+  const provdIgjen = new Set(mine.map((u) => u.nyttForsokAv).filter(Boolean));
   const liste = mine.filter(
-    (u) => dagFor(new Date(u.utfort)) === iDag || u.status === 'venter' || (u.status === 'avvist' && !provdIgjen.has(u.id) && u.uke_start === uke),
+    (u) => dagFor(new Date(u.utfort)) === iDag || u.status === 'venter' || (u.status === 'avvist' && !provdIgjen.has(u.id) && u.ukeStart === uke),
   );
   const oppgaveFor = (id: string) => oppgaver.data?.find((o) => o.id === id);
 
@@ -71,7 +71,7 @@ export default function BarnHjem() {
                   </T>
                 ) : null}
               </View>
-              <Mynt ore={o.belop_ore} />
+              <Mynt ore={o.belopOre} />
               <View style={[styles.pluss, { borderColor: f.merke }]}>
                 <Text style={{ color: f.merke, fontSize: 22, fontWeight: '800' }}>+</Text>
               </View>
@@ -86,9 +86,9 @@ export default function BarnHjem() {
           <UtforelseRad
             key={u.id}
             u={u}
-            tittel={oppgaveFor(u.oppgave_id)?.tittel ?? 'Oppgave'}
+            tittel={oppgaveFor(u.oppgaveId)?.tittel ?? 'Oppgave'}
             onProvIgjen={() => {
-              const o = oppgaveFor(u.oppgave_id);
+              const o = oppgaveFor(u.oppgaveId);
               if (o) setValgt({ oppgave: o, nyttForsokAv: u.id });
             }}
             onAngre={() => angre(u.id)}
@@ -145,7 +145,7 @@ function UtforelseRad({
           </Pressable>
         </View>
       ) : u.status === 'godkjent' ? (
-        <Pille tekst={`+${kr(u.belop_ore)}`} type="godkjent" />
+        <Pille tekst={`+${kr(u.belopOre)}`} type="godkjent" />
       ) : (
         <Knapp tittel="Prøv igjen" variant="nei" liten onPress={onProvIgjen} />
       )}
@@ -187,7 +187,7 @@ function KryssAvArk({
           <Felt value={merknad} onChangeText={setMerknad} placeholder="Skriv noe til mamma eller pappa …" maxLength={120} />
           <Knapp tittel="Ferdig! Send til godkjenning" onPress={() => onSend(merknad || null)} />
           <T dempet sentrert v="liten">
-            Du får {kr(o?.belop_ore)} og en ⭐ når det er godkjent
+            Du får {kr(o?.belopOre)} og en ⭐ når det er godkjent
           </T>
         </View>
       </KeyboardAvoidingView>

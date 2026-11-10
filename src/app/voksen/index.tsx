@@ -30,21 +30,21 @@ export default function TilGodkjenning() {
       ) : (
         <>
           {venter.map((u) => {
-            const b = barnFor(u.barn_id);
+            const b = barnFor(u.barnId);
             return (
               <Kort key={u.id}>
                 <View style={{ flexDirection: 'row', gap: avstand.m, alignItems: 'center' }}>
-                  <Avatar navn={b?.navn ?? '?'} farge={b?.farge} bildeSti={b?.bilde_sti} />
+                  <Avatar navn={b?.navn ?? '?'} farge={b?.farge} bilde={b?.bilde} />
                   <View style={{ flex: 1 }}>
                     <T fet>
-                      {oppgaveFor(u.oppgave_id)?.tittel ?? 'Oppgave'}
+                      {oppgaveFor(u.oppgaveId)?.tittel ?? 'Oppgave'}
                       {u.merknad ? ` · ${u.merknad}` : ''}
                     </T>
                     <T dempet v="liten">
                       {b?.navn} · {naarTekst(u.utfort)}
                     </T>
                   </View>
-                  <T fet>{kr(u.belop_ore)}</T>
+                  <T fet>{kr(u.belopOre)}</T>
                 </View>
                 {avviser === u.id ? (
                   <>
@@ -101,15 +101,15 @@ export default function TilGodkjenning() {
         <View key={u.id} style={{ flexDirection: 'row', alignItems: 'center', gap: avstand.s }}>
           <View style={{ flex: 1 }}>
             <T v="liten" fet>
-              {barnFor(u.barn_id)?.navn} · {oppgaveFor(u.oppgave_id)?.tittel}
+              {barnFor(u.barnId)?.navn} · {oppgaveFor(u.oppgaveId)?.tittel}
               {u.merknad ? ` · ${u.merknad}` : ''}
             </T>
             <T v="liten" dempet>
               {naarTekst(u.utfort)}
-              {u.registrert_av ? ' · registrert av voksen' : ''}
+              {u.registrertAv ? ' · registrert av voksen' : ''}
             </T>
           </View>
-          <Pille tekst={u.status === 'godkjent' ? kr(u.belop_ore) : 'Avvist'} type={u.status} />
+          <Pille tekst={u.status === 'godkjent' ? kr(u.belopOre) : 'Avvist'} type={u.status} />
         </View>
       ))}
     </Skjerm>

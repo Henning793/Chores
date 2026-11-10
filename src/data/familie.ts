@@ -1,28 +1,45 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { randomUUID } from 'expo-crypto';
+import {
+  collection,
+  doc,
+  getDoc,
+  query,
+  serverTimestamp,
+  setDoc,
+  Timestamp,
+  updateDoc,
+  writeBatch,
+} from 'firebase/firestore';
+import { useMemo } from 'react';
 
 import { useAuth } from '@/data/auth';
+import { useLive } from '@/data/live';
 import type { Barn, Familie, Oppgave, Voksen } from '@/data/typer';
-import { supabase } from '@/lib/supabase';
-
-async function hent<T>(sporring: PromiseLike<{ data: T | null; error: unknown }>): Promise<T> {
-  const { data, error } = await sporring;
-  if (error) throw error;
-  return data as T;
-}
+import { db } from '@/lib/firebase';
+import { lagPin } from '@/lib/pin';
 
 /** Den innloggede voksne og familien hen tilhører (null hvis ingen familie ennå). */
 export function useMeg() {
-  const { session } = useAuth();
-  const brukerId = session?.user.id;
+  const { bruker } = useAuth();
+  const uid = bruker?.uid;
   return useQuery({
-    queryKey: ['meg', brukerId],
-    enabled: !!brukerId,
+    queryKey: ['meg', uid],
+    enabled: !!uid,
+    networkMode: 'offlineFirst',
     queryFn: async () => {
-      const rader = await hent<(Voksen & { familier: Familie })[]>(
-        supabase.from('voksne').select('*, familier(*)').eq('bruker_id', brukerId!).limit(1),
-      );
-      const rad = rader[0];
-      return rad ? { voksen: rad as Voksen, familie: rad.familier } : null;
+      const b = await getDoc(doc(db, 'brukere', uid!));
+      const familieId = b.data()?.familieId as string | undefined;
+      if (!familieId) return null;
+      const [f, v] = await Promise.all([
+        getDoc(doc(db, 'familier', familieId)),
+        getDoc(doc(db, 'familier', familieId, 'voksne', uid!)),
+      ]);
+      if (!f.exists() || !v.exists()) return null;
+      return {
+        familie: { id: f.id, ...f.data() } as Familie,
+        voksen: { id: v.id, ...v.data() } as Voksen,
+      };
     },
   });
 }
@@ -34,61 +51,52 @@ export function useFamilieId(): string {
   return data.familie.id;
 }
 
+const ikkeArkivert = <T extends { arkivert: string | null; rekkefolge: number }>(rader: T[] | undefined) =>
+  (rader ?? []).filter((r) => !r.arkivert).sort((a, b) => a.rekkefolge - b.rekkefolge);
+
 export function useBarn() {
   const familieId = useFamilieId();
-  return useQuery({
-    queryKey: ['barn', familieId],
-    queryFn: () =>
-      hent<Barn[]>(
-        supabase.from('barn').select('*').eq('familie_id', familieId).is('arkivert', null).order('rekkefolge').order('opprettet'),
-      ),
-  });
+  const q = useMemo(() => query(collection(db, 'familier', familieId, 'barn')), [familieId]);
+  const r = useLive<Barn>(['barn', familieId], q);
+  const data = useMemo(() => ikkeArkivert(r.data), [r.data]);
+  return { ...r, data };
 }
 
 export function useVoksne() {
   const familieId = useFamilieId();
-  return useQuery({
-    queryKey: ['voksne', familieId],
-    queryFn: () => hent<Voksen[]>(supabase.from('voksne').select('*').eq('familie_id', familieId).order('opprettet')),
-  });
-}
-
-/** ID-er til voksne som har satt PIN. */
-export function useVoksneMedPin() {
-  const familieId = useFamilieId();
-  return useQuery({
-    queryKey: ['voksne-med-pin', familieId],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('voksne_med_pin', { p_familie: familieId });
-      if (error) throw error;
-      return (data as string[]) ?? [];
-    },
-  });
+  const q = useMemo(() => query(collection(db, 'familier', familieId, 'voksne')), [familieId]);
+  return useLive<Voksen>(['voksne', familieId], q);
 }
 
 export function useOppgaver() {
   const familieId = useFamilieId();
-  return useQuery({
-    queryKey: ['oppgaver', familieId],
-    queryFn: () =>
-      hent<Oppgave[]>(
-        supabase.from('oppgaver').select('*').eq('familie_id', familieId).is('arkivert', null).order('rekkefolge').order('opprettet'),
-      ),
-  });
+  const q = useMemo(() => query(collection(db, 'familier', familieId, 'oppgaver')), [familieId]);
+  const r = useLive<Oppgave>(['oppgaver', familieId], q);
+  const data = useMemo(() => ikkeArkivert(r.data), [r.data]);
+  return { ...r, data };
 }
 
 // ---------------------------------------------------------------------------
-// Endringer (krever nett)
+// Familie og invitasjon
 // ---------------------------------------------------------------------------
 
 export function useOpprettFamilie() {
   const qc = useQueryClient();
+  const { bruker } = useAuth();
   return useMutation({
     mutationFn: async (v: { familienavn: string; visningsnavn: string; pin: string }) => {
-      const { error } = await supabase.rpc('opprett_familie', { p_navn: v.familienavn, p_visningsnavn: v.visningsnavn });
-      if (error) throw error;
-      const { error: pinFeil } = await supabase.rpc('sett_pin', { p_pin: v.pin });
-      if (pinFeil) throw pinFeil;
+      const uid = bruker!.uid;
+      const familieRef = doc(collection(db, 'familier'));
+      const batch = writeBatch(db);
+      batch.set(familieRef, { navn: v.familienavn, opprettetAv: uid, opprettet: serverTimestamp() });
+      batch.set(doc(familieRef, 'voksne', uid), {
+        visningsnavn: v.visningsnavn,
+        bilde: null,
+        ...(await lagPin(uid, v.pin)),
+        opprettet: serverTimestamp(),
+      });
+      batch.set(doc(db, 'brukere', uid), { familieId: familieRef.id });
+      await batch.commit();
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['meg'] }),
   });
@@ -96,94 +104,111 @@ export function useOpprettFamilie() {
 
 export function useGodtaInvitasjon() {
   const qc = useQueryClient();
+  const { bruker } = useAuth();
   return useMutation({
     mutationFn: async (v: { token: string; visningsnavn: string; pin: string }) => {
-      const { error } = await supabase.rpc('godta_invitasjon', { p_token: v.token, p_visningsnavn: v.visningsnavn });
-      if (error) throw error;
-      const { error: pinFeil } = await supabase.rpc('sett_pin', { p_pin: v.pin });
-      if (pinFeil) throw pinFeil;
+      const uid = bruker!.uid;
+      const invRef = doc(db, 'invitasjoner', v.token);
+      const inv = await getDoc(invRef).catch(() => null);
+      const data = inv?.data();
+      if (!data || data.brukt || (data.utloper as Timestamp).toMillis() < Date.now()) {
+        throw new Error('Invitasjonen er ugyldig, brukt eller utløpt. Be om en ny lenke.');
+      }
+      const familieId = data.familieId as string;
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'familier', familieId, 'voksne', uid), {
+        visningsnavn: v.visningsnavn,
+        bilde: null,
+        ...(await lagPin(uid, v.pin)),
+        invitasjon: v.token,
+        opprettet: serverTimestamp(),
+      });
+      batch.update(invRef, { brukt: serverTimestamp(), bruktAv: uid });
+      batch.set(doc(db, 'brukere', uid), { familieId });
+      await batch.commit();
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['meg'] }),
   });
 }
 
+/** Lager en invitasjon som er gyldig i 2 timer. Gir token til lenken. */
+export async function opprettInvitasjon(familieId: string, uid: string): Promise<{ token: string; utloper: number }> {
+  const token = (randomUUID() + randomUUID()).replace(/-/g, '');
+  const utloper = Date.now() + 2 * 60 * 60 * 1000 - 30 * 1000; // litt margin mot klokkeforskjell
+  await setDoc(doc(db, 'invitasjoner', token), {
+    familieId,
+    opprettetAv: uid,
+    opprettet: serverTimestamp(),
+    utloper: Timestamp.fromMillis(utloper),
+    brukt: null,
+    bruktAv: null,
+  });
+  return { token, utloper };
+}
+
+const loggFeil = (e: unknown) => console.warn('Lagring feilet', e);
+
+// ---------------------------------------------------------------------------
+// Barn, oppgaver og egen profil. Firestore viser endringen med en gang, også uten nett.
+// ---------------------------------------------------------------------------
+
 export function useLagreBarn() {
-  const qc = useQueryClient();
   const familieId = useFamilieId();
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (b: Partial<Barn> & { navn: string }) => {
-      const rad = { ...b, familie_id: familieId };
-      const { error } = b.id
-        ? await supabase.from('barn').update(rad).eq('id', b.id)
-        : await supabase.from('barn').insert(rad);
-      if (error) throw error;
+      const { id, ...rest } = b;
+      const ref = id ? doc(db, 'familier', familieId, 'barn', id) : doc(collection(db, 'familier', familieId, 'barn'));
+      const ny = id ? {} : { rekkefolge: Date.now(), arkivert: null, bilde: null };
+      setDoc(ref, { ...ny, ...rest }, { merge: true }).catch(loggFeil);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['barn', familieId] }),
   });
 }
 
 export function useArkiverBarn() {
-  const qc = useQueryClient();
   const familieId = useFamilieId();
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('barn').update({ arkivert: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
+      updateDoc(doc(db, 'familier', familieId, 'barn', id), { arkivert: new Date().toISOString() }).catch(loggFeil);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['barn', familieId] }),
   });
 }
 
 export function useLagreOppgave() {
-  const qc = useQueryClient();
   const familieId = useFamilieId();
   return useMutation({
-    mutationFn: async (o: Partial<Oppgave> & { tittel: string; belop_ore: number }) => {
-      const rad = { ...o, familie_id: familieId };
-      const { error } = o.id
-        ? await supabase.from('oppgaver').update(rad).eq('id', o.id)
-        : await supabase.from('oppgaver').insert(rad);
-      if (error) throw error;
+    networkMode: 'always',
+    mutationFn: async (o: Partial<Oppgave> & { tittel: string; belopOre: number }) => {
+      const { id, ...rest } = o;
+      const ref = id ? doc(db, 'familier', familieId, 'oppgaver', id) : doc(collection(db, 'familier', familieId, 'oppgaver'));
+      const ny = id ? {} : { rekkefolge: Date.now(), arkivert: null };
+      setDoc(ref, { ...ny, ...rest }, { merge: true }).catch(loggFeil);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['oppgaver', familieId] }),
   });
 }
 
 export function useArkiverOppgave() {
-  const qc = useQueryClient();
   const familieId = useFamilieId();
   return useMutation({
+    networkMode: 'always',
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('oppgaver').update({ arkivert: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
+      updateDoc(doc(db, 'familier', familieId, 'oppgaver', id), { arkivert: new Date().toISOString() }).catch(loggFeil);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['oppgaver', familieId] }),
   });
 }
 
 export function useLagreVoksen() {
   const qc = useQueryClient();
-  const { session } = useAuth();
+  const { bruker } = useAuth();
   const familieId = useFamilieId();
   return useMutation({
-    mutationFn: async (v: { visningsnavn?: string; bilde_sti?: string | null }) => {
-      const { error } = await supabase.from('voksne').update(v).eq('bruker_id', session!.user.id).eq('familie_id', familieId);
-      if (error) throw error;
+    networkMode: 'always',
+    mutationFn: async (v: { visningsnavn?: string; bilde?: string | null; pin?: string }) => {
+      const { pin, ...rest } = v;
+      const endring = pin ? { ...rest, ...(await lagPin(bruker!.uid, pin)) } : rest;
+      updateDoc(doc(db, 'familier', familieId, 'voksne', bruker!.uid), endring).catch(loggFeil);
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['voksne', familieId] });
-      qc.invalidateQueries({ queryKey: ['meg'] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['meg'] }),
   });
-}
-
-export async function settPin(pin: string): Promise<void> {
-  const { error } = await supabase.rpc('sett_pin', { p_pin: pin });
-  if (error) throw error;
-}
-
-export async function opprettInvitasjon(familieId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('opprett_invitasjon', { p_familie: familieId });
-  if (error) throw error;
-  return data as string;
 }

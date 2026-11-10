@@ -4,8 +4,7 @@ import { View } from 'react-native';
 
 import { useAuth } from '@/data/auth';
 import { useGodtaInvitasjon, useOpprettFamilie } from '@/data/familie';
-import { huskPinLokalt } from '@/data/profil';
-import { feiltekst } from '@/lib/supabase';
+import { feiltekst } from '@/lib/firebase';
 import { Chip, Chips, Felt, Feilmelding, Knapp, Skjerm, T } from '@/ui/komponenter';
 import { avstand, useFarger } from '@/ui/tema';
 
@@ -19,7 +18,7 @@ function lesToken(tekst: string): string {
 
 export default function Velkommen() {
   const f = useFarger();
-  const { session, loggUt } = useAuth();
+  const { bruker, loggUt } = useAuth();
   const opprett = useOpprettFamilie();
   const godta = useGodtaInvitasjon();
   const [modus, setModus] = useState<'opprett' | 'bli-med'>('opprett');
@@ -54,7 +53,6 @@ export default function Velkommen() {
         await godta.mutateAsync({ token: lesToken(invitasjon), visningsnavn: navn.trim(), pin });
         await AsyncStorage.removeItem(INVITASJON_NOKKEL).catch(() => {});
       }
-      if (session) await huskPinLokalt(session.user.id, pin);
     } catch (e) {
       setFeil(feiltekst(e));
     }
@@ -62,7 +60,7 @@ export default function Velkommen() {
 
   return (
     <Skjerm stil={{ maxWidth: 480 }}>
-      <T dempet>Innlogget som {session?.user.email}</T>
+      <T dempet>Innlogget som {bruker?.email}</T>
       <Chips>
         <Chip tekst="Opprett ny familie" valgt={modus === 'opprett'} onPress={() => setModus('opprett')} />
         <Chip tekst="Jeg er invitert" valgt={modus === 'bli-med'} onPress={() => setModus('bli-med')} />

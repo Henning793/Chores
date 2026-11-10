@@ -15,14 +15,15 @@ export default function Pin() {
   const [feil, setFeil] = useState<string | null>(null);
   const [sjekker, setSjekker] = useState(false);
 
-  const v = voksne.data?.find((x) => x.bruker_id === voksen);
+  const v = voksne.data?.find((x) => x.id === voksen);
 
   async function endre(ny: string) {
     setFeil(null);
     setPin(ny);
-    if (ny.length !== 4 || !voksen) return;
+    if (ny.length !== 4 || !voksen || !v) return;
     setSjekker(true);
-    const svar = await sjekkPin(voksen, ny).catch(() => 'feil' as const);
+    if (!v) return;
+    const svar = await sjekkPin(v, ny).catch(() => 'feil' as const);
     setSjekker(false);
     if (svar === 'riktig') {
       velgVoksen(voksen);
@@ -33,8 +34,8 @@ export default function Pin() {
     setFeil(
       svar === 'sperret'
         ? 'For mange forsøk. Vent fem minutter.'
-        : svar === 'ukjent-offline'
-          ? 'Ingen nettforbindelse. Uten nett kan PIN bare sjekkes på en enhet der den er brukt før.'
+        : svar === 'mangler'
+          ? 'Denne voksne har ikke valgt PIN ennå.'
           : 'Feil PIN. Prøv igjen.',
     );
   }
@@ -42,7 +43,7 @@ export default function Pin() {
   return (
     <Skjerm stil={{ alignItems: 'center', gap: avstand.xl }}>
       <View style={{ alignItems: 'center', gap: avstand.s }}>
-        <Avatar navn={v?.visningsnavn ?? '?'} bildeSti={v?.bilde_sti} storrelse={72} />
+        <Avatar navn={v?.visningsnavn ?? '?'} bilde={v?.bilde} storrelse={72} />
         <T v="tittel">Hei, {v?.visningsnavn}</T>
         <T dempet>Skriv inn PIN-koden din</T>
       </View>

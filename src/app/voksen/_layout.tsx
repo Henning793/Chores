@@ -2,13 +2,12 @@ import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 
 import { useProfil } from '@/data/profil';
-import { useSanntid, useUtforelser } from '@/data/utforelser';
+import { useUtforelser } from '@/data/utforelser';
 import { ByttProfilKnapp, FaneIkon } from '@/ui/hode';
 import { useFarger } from '@/ui/tema';
 
 export default function VoksenLayout() {
   const f = useFarger();
-  useSanntid();
   const { aktiv } = useProfil();
   const utforelser = useUtforelser();
   const venter = utforelser.data.filter((u) => u.status === 'venter').length;

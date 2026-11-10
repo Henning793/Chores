@@ -1,63 +1,60 @@
-import type { Session } from '@supabase/supabase-js';
-import { makeRedirectUri } from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  sendPasswordResetEmail,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+  signOut,
+  type User,
+} from 'firebase/auth';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-import { supabase } from '@/lib/supabase';
-
-WebBrowser.maybeCompleteAuthSession();
+import { auth } from '@/lib/firebase';
 
 type AuthVerdi = {
-  session: Session | null;
+  bruker: User | null;
   laster: boolean;
-  sendKode: (epost: string) => Promise<void>;
-  bekreftKode: (epost: string, kode: string) => Promise<void>;
-  loggInnMedGoogle: () => Promise<void>;
+  loggInn: (epost: string, passord: string) => Promise<void>;
+  opprettBruker: (epost: string, passord: string) => Promise<void>;
+  glemtPassord: (epost: string) => Promise<void>;
+  loggInnMedGoogle: (idToken: string) => Promise<void>;
   loggUt: () => Promise<void>;
 };
 
 const AuthKontekst = createContext<AuthVerdi | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [bruker, setBruker] = useState<User | null>(auth.currentUser);
   const [laster, setLaster] = useState(true);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      setLaster(false);
-    });
-    const { data } = supabase.auth.onAuthStateChange((_hendelse, ny) => setSession(ny));
-    return () => data.subscription.unsubscribe();
-  }, []);
+  useEffect(
+    () =>
+      onAuthStateChanged(auth, (b) => {
+        setBruker(b);
+        setLaster(false);
+      }),
+    [],
+  );
 
   const verdi: AuthVerdi = {
-    session,
+    bruker,
     laster,
-    async sendKode(epost) {
-      const { error } = await supabase.auth.signInWithOtp({ email: epost.trim(), options: { shouldCreateUser: true } });
-      if (error) throw error;
+    async loggInn(epost, passord) {
+      await signInWithEmailAndPassword(auth, epost.trim(), passord);
     },
-    async bekreftKode(epost, kode) {
-      const { error } = await supabase.auth.verifyOtp({ email: epost.trim(), token: kode.trim(), type: 'email' });
-      if (error) throw error;
+    async opprettBruker(epost, passord) {
+      await createUserWithEmailAndPassword(auth, epost.trim(), passord);
     },
-    async loggInnMedGoogle() {
-      const redirectTo = makeRedirectUri({ path: 'auth' });
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo, skipBrowserRedirect: true },
-      });
-      if (error) throw error;
-      const resultat = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-      if (resultat.type !== 'success') return;
-      const kode = new URL(resultat.url).searchParams.get('code');
-      if (!kode) throw new Error('Innloggingen ble avbrutt.');
-      const { error: byttFeil } = await supabase.auth.exchangeCodeForSession(kode);
-      if (byttFeil) throw byttFeil;
+    async glemtPassord(epost) {
+      auth.languageCode = 'no';
+      await sendPasswordResetEmail(auth, epost.trim());
+    },
+    async loggInnMedGoogle(idToken) {
+      await signInWithCredential(auth, GoogleAuthProvider.credential(idToken));
     },
     async loggUt() {
-      await supabase.auth.signOut();
+      await signOut(auth);
     },
   };
 

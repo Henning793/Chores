@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 
 import { useAuth } from '@/data/auth';
-import { velgOgLastOppBilde } from '@/data/bilder';
+import { velgBilde } from '@/data/bilder';
 import {
   opprettInvitasjon,
-  settPin,
   useArkiverBarn,
   useBarn,
   useFamilieId,
@@ -16,9 +15,10 @@ import {
   useMeg,
   useVoksne,
 } from '@/data/familie';
-import { huskPinLokalt, useProfil } from '@/data/profil';
+import { useProfil } from '@/data/profil';
+import { avregistrerVarsler } from '@/data/varsler';
 import type { Barn } from '@/data/typer';
-import { feiltekst } from '@/lib/supabase';
+import { feiltekst } from '@/lib/firebase';
 import { Avatar, Chip, Chips, Felt, Feilmelding, Knapp, Kort, Laster, Pille, Rad, Seksjon, Skjerm, T } from '@/ui/komponenter';
 import { avstand, profilFarger, useFarger } from '@/ui/tema';
 
@@ -26,12 +26,13 @@ export default function Mer() {
   const meg = useMeg();
   const barn = useBarn();
   const voksne = useVoksne();
-  const { loggUt, session } = useAuth();
+  const { loggUt, bruker } = useAuth();
+  const familieId = useFamilieId();
   const { aktiv, lastBarn, settLastBarn, bytt } = useProfil();
   const [redigerBarn, setRedigerBarn] = useState<Partial<Barn> | null>(null);
 
   if (barn.isPending || voksne.isPending) return <Laster />;
-  const erInnloggetVoksen = aktiv?.type === 'voksen' && aktiv.id === session?.user.id;
+  const erInnloggetVoksen = aktiv?.type === 'voksen' && aktiv.id === bruker?.uid;
 
   return (
     <>
@@ -41,7 +42,7 @@ export default function Mer() {
         <Seksjon>Barn</Seksjon>
         {barn.data?.map((b) => (
           <Rad key={b.id} onPress={() => setRedigerBarn(b)}>
-            <Avatar navn={b.navn} farge={b.farge} bildeSti={b.bilde_sti} />
+            <Avatar navn={b.navn} farge={b.farge} bilde={b.bilde} />
             <T fet stil={{ flex: 1 }}>
               {b.navn}
             </T>
@@ -52,12 +53,12 @@ export default function Mer() {
 
         <Seksjon>Voksne</Seksjon>
         {voksne.data?.map((v) => (
-          <Rad key={v.bruker_id}>
-            <Avatar navn={v.visningsnavn} bildeSti={v.bilde_sti} />
+          <Rad key={v.id}>
+            <Avatar navn={v.visningsnavn} bilde={v.bilde} />
             <T fet stil={{ flex: 1 }}>
               {v.visningsnavn}
             </T>
-            {aktiv?.id === v.bruker_id ? <Pille tekst="Deg" type="info" /> : null}
+            {aktiv?.id === v.id ? <Pille tekst="Deg" type="info" /> : null}
           </Rad>
         ))}
         <Invitasjon />
@@ -79,7 +80,7 @@ export default function Mer() {
           </Chips>
         </Kort>
         <T dempet v="liten">
-          Innlogget som {session?.user.email}
+          Innlogget som {bruker?.email}
         </T>
         <Knapp
           tittel="Logg ut av denne enheten"
@@ -87,6 +88,7 @@ export default function Mer() {
           onPress={async () => {
             bytt();
             settLastBarn(null);
+            await avregistrerVarsler(familieId);
             await loggUt();
             router.replace('/');
           }}
@@ -99,6 +101,7 @@ export default function Mer() {
 
 function Invitasjon() {
   const familieId = useFamilieId();
+  const { bruker } = useAuth();
   const [lenke, setLenke] = useState<string | null>(null);
   const [utloper, setUtloper] = useState<number | null>(null);
   const [na, setNa] = useState(() => Date.now());
@@ -118,9 +121,9 @@ function Invitasjon() {
     setFeil(null);
     setOpptatt(true);
     try {
-      const token = await opprettInvitasjon(familieId);
-      setLenke(Linking.createURL('invitasjon', { queryParams: { t: token } }));
-      setUtloper(Date.now() + 2 * 3600000);
+      const inv = await opprettInvitasjon(familieId, bruker!.uid);
+      setLenke(Linking.createURL('invitasjon', { queryParams: { t: inv.token } }));
+      setUtloper(inv.utloper);
       setNa(Date.now());
     } catch (e) {
       setFeil(feiltekst(e));
@@ -161,10 +164,9 @@ function Invitasjon() {
 }
 
 function MinProfil({ brukerId, kanEndre }: { brukerId: string; kanEndre: boolean }) {
-  const familieId = useFamilieId();
   const voksne = useVoksne();
   const lagre = useLagreVoksen();
-  const v = voksne.data?.find((x) => x.bruker_id === brukerId);
+  const v = voksne.data?.find((x) => x.id === brukerId);
   const [navn, setNavn] = useState(v?.visningsnavn ?? '');
   const [pin, setPin] = useState('');
   const [pin2, setPin2] = useState('');
@@ -193,15 +195,15 @@ function MinProfil({ brukerId, kanEndre }: { brukerId: string; kanEndre: boolean
   return (
     <Kort>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: avstand.m }}>
-        <Avatar navn={v?.visningsnavn ?? '?'} bildeSti={v?.bilde_sti} storrelse={56} />
+        <Avatar navn={v?.visningsnavn ?? '?'} bilde={v?.bilde} storrelse={56} />
         <Knapp
           tittel="Velg bilde"
           variant="myk"
           liten
           onPress={() =>
             kjor(async () => {
-              const sti = await velgOgLastOppBilde(familieId);
-              if (sti) await lagre.mutateAsync({ bilde_sti: sti });
+              const bilde = await velgBilde();
+              if (bilde) await lagre.mutateAsync({ bilde });
             }, 'Bildet er lagret.')
           }
         />
@@ -240,8 +242,7 @@ function MinProfil({ brukerId, kanEndre }: { brukerId: string; kanEndre: boolean
         deaktivert={!/^\d{4}$/.test(pin) || pin !== pin2}
         onPress={() =>
           kjor(async () => {
-            await settPin(pin);
-            await huskPinLokalt(brukerId, pin);
+            await lagre.mutateAsync({ pin });
             setPin('');
             setPin2('');
           }, 'Ny PIN er lagret.')
@@ -255,12 +256,11 @@ function MinProfil({ brukerId, kanEndre }: { brukerId: string; kanEndre: boolean
 
 function BarnSkjema({ start, onLukk }: { start: Partial<Barn>; onLukk: () => void }) {
   const f = useFarger();
-  const familieId = useFamilieId();
   const lagre = useLagreBarn();
   const arkiver = useArkiverBarn();
   const [navn, setNavn] = useState(start.navn ?? '');
   const [farge, setFarge] = useState(start.farge ?? profilFarger[0]);
-  const [bilde, setBilde] = useState<string | null>(start.bilde_sti ?? null);
+  const [bilde, setBilde] = useState<string | null>(start.bilde ?? null);
   const [feil, setFeil] = useState<string | null>(null);
   const [lasterOpp, setLasterOpp] = useState(false);
   const [bekreftArkiver, setBekreftArkiver] = useState(false);
@@ -277,7 +277,7 @@ function BarnSkjema({ start, onLukk }: { start: Partial<Barn>; onLukk: () => voi
           </Pressable>
         </View>
         <View style={{ alignItems: 'center', gap: avstand.s }}>
-          <Avatar navn={navn || '?'} farge={farge} bildeSti={bilde} storrelse={96} />
+          <Avatar navn={navn || '?'} farge={farge} bilde={bilde} storrelse={96} />
           <View style={{ flexDirection: 'row', gap: avstand.s }}>
             <Knapp
               tittel="Velg bilde fra galleri"
@@ -288,8 +288,8 @@ function BarnSkjema({ start, onLukk }: { start: Partial<Barn>; onLukk: () => voi
                 setFeil(null);
                 setLasterOpp(true);
                 try {
-                  const sti = await velgOgLastOppBilde(familieId);
-                  if (sti) setBilde(sti);
+                  const valgt = await velgBilde();
+                  if (valgt) setBilde(valgt);
                 } catch (e) {
                   setFeil(feiltekst(e));
                 } finally {
@@ -322,7 +322,7 @@ function BarnSkjema({ start, onLukk }: { start: Partial<Barn>; onLukk: () => voi
           deaktivert={!navn.trim()}
           laster={lagre.isPending}
           onPress={async () => {
-            await lagre.mutateAsync({ id: start.id, navn: navn.trim(), farge, bilde_sti: bilde });
+            await lagre.mutateAsync({ id: start.id, navn: navn.trim(), farge, bilde: bilde });
             onLukk();
           }}
         />

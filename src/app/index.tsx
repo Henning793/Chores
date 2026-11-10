@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useBarn, useMeg, useVoksne } from '@/data/familie';
 import { useProfil } from '@/data/profil';
-import { useSanntid, useUtforelser } from '@/data/utforelser';
+import { useUtforelser } from '@/data/utforelser';
 import { ukeStart } from '@/lib/uke';
 import { Avatar, Laster, Seksjon, Skjerm, T, Tom } from '@/ui/komponenter';
 import { avstand, radius, useFarger } from '@/ui/tema';
@@ -12,7 +12,6 @@ import { avstand, radius, useFarger } from '@/ui/tema';
 /** «Hvem bruker appen?» Barneprofiler er åpne, voksne krever PIN. */
 export default function Hvem() {
   const f = useFarger();
-  useSanntid();
   const meg = useMeg();
   const barn = useBarn();
   const voksne = useVoksne();
@@ -31,7 +30,7 @@ export default function Hvem() {
 
   const denneUka = ukeStart();
   const stjerner = (barnId: string) =>
-    utforelser.data.filter((u) => u.barn_id === barnId && u.uke_start === denneUka && u.status === 'godkjent').length;
+    utforelser.data.filter((u) => u.barnId === barnId && u.ukeStart === denneUka && u.status === 'godkjent').length;
   const venter = utforelser.data.filter((u) => u.status === 'venter').length;
   const synligeBarn = (barn.data ?? []).filter((b) => !lastBarn || b.id === lastBarn);
 
@@ -54,7 +53,7 @@ export default function Hvem() {
               accessibilityLabel={`Bruk appen som ${b.navn}`}
               onPress={() => velgBarn(b.id)}
               style={({ pressed }) => [styles.flis, { backgroundColor: f.flate, borderColor: f.linje, opacity: pressed ? 0.7 : 1 }]}>
-              <Avatar navn={b.navn} farge={b.farge} bildeSti={b.bilde_sti} storrelse={88} />
+              <Avatar navn={b.navn} farge={b.farge} bilde={b.bilde} storrelse={88} />
               <T v="tittel">{b.navn}</T>
               <T dempet v="liten">
                 ⭐ {stjerner(b.id)} denne uka
@@ -68,15 +67,15 @@ export default function Hvem() {
       <View style={styles.rutenett}>
         {(voksne.data ?? []).map((v) => (
           <Pressable
-            key={v.bruker_id}
+            key={v.id}
             accessibilityRole="button"
             accessibilityLabel={`Åpne voksenprofilen til ${v.visningsnavn}`}
             onPress={() => {
               bytt();
-              router.push({ pathname: '/pin', params: { voksen: v.bruker_id } });
+              router.push({ pathname: '/pin', params: { voksen: v.id } });
             }}
             style={({ pressed }) => [styles.flis, styles.flisLiten, { backgroundColor: f.flate, borderColor: f.linje, opacity: pressed ? 0.7 : 1 }]}>
-            <Avatar navn={v.visningsnavn} bildeSti={v.bilde_sti} storrelse={48} />
+            <Avatar navn={v.visningsnavn} bilde={v.bilde} storrelse={48} />
             <T fet>{v.visningsnavn}</T>
             <Text style={{ color: f.dempet, fontSize: 12 }}>🔒 PIN{venter > 0 ? ` · ${venter} venter` : ''}</Text>
           </Pressable>

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 
-import type { Ukeoppgjor } from '@/data/typer';
-import { useUkeoppgjor, useUtforelser } from '@/data/utforelser';
+import { useUkesummer, useUtforelser } from '@/data/utforelser';
 import { leggTilDager, ukeStart } from '@/lib/uke';
 
 export type Uke = {
@@ -15,57 +14,52 @@ export type Uke = {
 };
 
 /**
- * Ukesummer per barn. Historikk kommer fra databasen; denne og forrige uke regnes ut
+ * Ukesummer per barn. Historikken ligger i ukesum-dokumentene; denne og forrige uke regnes ut
  * fra avkrysningene på enheten, så de også viser det som ikke er sendt ennå.
  */
 export function useUker(): { uker: Uke[]; laster: boolean } {
-  const oppgjor = useUkeoppgjor();
+  const summer = useUkesummer();
   const utforelser = useUtforelser();
 
   const uker = useMemo(() => {
     const denne = ukeStart();
     const forrige = leggTilDager(denne, -7);
     const kart = new Map<string, Uke>();
-    const nokkel = (b: string, u: string) => `${b}|${u}`;
-
-    for (const r of (oppgjor.data ?? []) as Ukeoppgjor[]) {
-      kart.set(nokkel(r.barn_id, r.uke_start), {
-        barnId: r.barn_id,
-        ukeStart: r.uke_start,
-        tjentOre: r.tjent_ore ?? 0,
-        antallGodkjent: r.antall_godkjent,
-        antallVenter: r.antall_venter,
-        utbetaltOre: r.utbetalt_ore,
-        utbetalt: r.utbetalt,
-      });
-    }
-
-    const lokale = new Map<string, Uke>();
-    for (const u of utforelser.data) {
-      if (u.uke_start !== denne && u.uke_start !== forrige) continue;
-      const k = nokkel(u.barn_id, u.uke_start);
-      const fraDb = kart.get(k);
-      const uke = lokale.get(k) ?? {
-        barnId: u.barn_id,
-        ukeStart: u.uke_start,
-        tjentOre: 0,
-        antallGodkjent: 0,
-        antallVenter: 0,
-        utbetaltOre: fraDb?.utbetaltOre ?? null,
-        utbetalt: fraDb?.utbetalt ?? null,
-      };
-      if (u.status === 'godkjent') {
-        uke.tjentOre += u.belop_ore;
-        uke.antallGodkjent += 1;
-      } else if (u.status === 'venter') {
-        uke.antallVenter += 1;
+    const nokkel = (b: string, u: string) => `${b}_${u}`;
+    const hent = (barnId: string, uke: string): Uke => {
+      const k = nokkel(barnId, uke);
+      let v = kart.get(k);
+      if (!v) {
+        v = { barnId, ukeStart: uke, tjentOre: 0, antallGodkjent: 0, antallVenter: 0, utbetaltOre: null, utbetalt: null };
+        kart.set(k, v);
       }
-      lokale.set(k, uke);
+      return v;
+    };
+
+    for (const s of summer.data ?? []) {
+      const v = hent(s.barnId, s.ukeStart);
+      v.utbetaltOre = s.utbetaltOre ?? null;
+      v.utbetalt = s.utbetalt ?? null;
+      if (s.ukeStart !== denne && s.ukeStart !== forrige) {
+        v.tjentOre = s.tjentOre ?? 0;
+        v.antallGodkjent = s.antallGodkjent ?? 0;
+      }
     }
-    lokale.forEach((v, k) => kart.set(k, v));
 
-    return [...kart.values()].sort((a, b) => b.ukeStart.localeCompare(a.ukeStart));
-  }, [oppgjor.data, utforelser.data]);
+    for (const u of utforelser.data) {
+      const nylig = u.ukeStart === denne || u.ukeStart === forrige;
+      if (u.status === 'venter') hent(u.barnId, u.ukeStart).antallVenter += 1;
+      if (nylig && u.status === 'godkjent') {
+        const v = hent(u.barnId, u.ukeStart);
+        v.tjentOre += u.belopOre;
+        v.antallGodkjent += 1;
+      }
+    }
 
-  return { uker, laster: oppgjor.isPending };
+    return [...kart.values()]
+      .filter((u) => u.tjentOre > 0 || u.antallVenter > 0 || u.antallGodkjent > 0)
+      .sort((a, b) => b.ukeStart.localeCompare(a.ukeStart));
+  }, [summer.data, utforelser.data]);
+
+  return { uker, laster: !!summer.isPending };
 }

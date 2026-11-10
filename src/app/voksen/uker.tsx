@@ -7,7 +7,7 @@ import { kr } from '@/lib/penger';
 import { ukeSpenn, ukeStart, ukenummer } from '@/lib/uke';
 import { Avatar, Feilmelding, Knapp, Laster, Pille, Rad, Seksjon, Skjerm, T, Tom } from '@/ui/komponenter';
 import { avstand } from '@/ui/tema';
-import { feiltekst } from '@/lib/supabase';
+import { feiltekst } from '@/lib/firebase';
 
 export default function Ukeoppgjor() {
   const barn = useBarn();
@@ -45,7 +45,7 @@ export default function Ukeoppgjor() {
                 u={u}
                 navn={barnFor(u.barnId)?.navn ?? 'Tidligere barn'}
                 farge={barnFor(u.barnId)?.farge}
-                bilde={barnFor(u.barnId)?.bilde_sti}
+                bilde={barnFor(u.barnId)?.bilde}
                 pagar={us === denne}
                 opptatt={betal.isPending || angre.isPending}
                 onBetal={() => betal.mutate({ barnId: u.barnId, ukeStart: u.ukeStart, belopOre: u.tjentOre })}
@@ -79,7 +79,7 @@ function UkeRad({
 }) {
   return (
     <Rad stil={{ flexWrap: 'wrap' }}>
-      <Avatar navn={navn} farge={farge} bildeSti={bilde} />
+      <Avatar navn={navn} farge={farge} bilde={bilde} />
       <View style={{ flex: 1, minWidth: 120 }}>
         <T fet>{navn}</T>
         <T dempet v="liten">

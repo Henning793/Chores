@@ -1,9 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto';
-import * as SecureStore from 'expo-secure-store';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-import { erNettverksfeil, supabase } from '@/lib/supabase';
+import type { Voksen } from '@/data/typer';
+import { pinHash } from '@/lib/pin';
 
 /** Hvem appen brukes på vegne av akkurat nå. Nullstilles når appen startes på nytt. */
 export type AktivProfil = { type: 'barn'; id: string } | { type: 'voksen'; id: string } | null;
@@ -60,33 +59,34 @@ export function useProfil(): ProfilVerdi {
 }
 
 // ---------------------------------------------------------------------------
-// PIN
+// PIN: sjekkes mot den voksnes dokument (lagret på enheten, så det virker uten nett).
+// Etter fem feil på denne enheten sperres det i fem minutter.
 // ---------------------------------------------------------------------------
 
-const pinNokkel = (brukerId: string) => `pin_${brukerId.replace(/-/g, '')}`;
-const hash = (brukerId: string, pin: string) => digestStringAsync(CryptoDigestAlgorithm.SHA256, `${brukerId}:${pin}`);
+export type PinSvar = 'riktig' | 'feil' | 'sperret' | 'mangler';
 
-export type PinSvar = 'riktig' | 'feil' | 'sperret' | 'ukjent-offline';
+const SPERRE_NOKKEL = 'pin.sperre';
+type Sperre = Record<string, { feil: number; til: number | null }>;
 
-/**
- * Sjekker PIN mot serveren. Uten nett brukes en lokal kopi fra siste vellykkede sjekk på denne enheten.
- */
-export async function sjekkPin(brukerId: string, pin: string): Promise<PinSvar> {
-  const { data, error } = await supabase.rpc('sjekk_pin', { p_bruker: brukerId, p_pin: pin });
-  if (!error) {
-    if (data === true) {
-      await SecureStore.setItemAsync(pinNokkel(brukerId), await hash(brukerId, pin)).catch(() => {});
-      return 'riktig';
-    }
-    return 'feil';
+async function lesSperre(): Promise<Sperre> {
+  try {
+    return JSON.parse((await AsyncStorage.getItem(SPERRE_NOKKEL)) ?? '{}') as Sperre;
+  } catch {
+    return {};
   }
-  if (!erNettverksfeil(error)) return error.message.includes('For mange') ? 'sperret' : 'feil';
-
-  const lagret = await SecureStore.getItemAsync(pinNokkel(brukerId)).catch(() => null);
-  if (!lagret) return 'ukjent-offline';
-  return lagret === (await hash(brukerId, pin)) ? 'riktig' : 'feil';
 }
 
-export async function huskPinLokalt(brukerId: string, pin: string) {
-  await SecureStore.setItemAsync(pinNokkel(brukerId), await hash(brukerId, pin)).catch(() => {});
+export async function sjekkPin(voksen: Voksen, pin: string): Promise<PinSvar> {
+  if (!voksen.pinHash || !voksen.pinSalt) return 'mangler';
+  const sperre = await lesSperre();
+  const s = sperre[voksen.id] ?? { feil: 0, til: null };
+  if (s.til && s.til > Date.now()) return 'sperret';
+
+  const riktig = (await pinHash(voksen.id, voksen.pinSalt, pin)) === voksen.pinHash;
+  sperre[voksen.id] = riktig
+    ? { feil: 0, til: null }
+    : { feil: s.feil + 1, til: s.feil + 1 >= 5 ? Date.now() + 5 * 60 * 1000 : null };
+  await AsyncStorage.setItem(SPERRE_NOKKEL, JSON.stringify(sperre)).catch(() => {});
+  if (riktig) return 'riktig';
+  return sperre[voksen.id].til ? 'sperret' : 'feil';
 }

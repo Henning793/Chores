@@ -44,7 +44,7 @@ export default function Registrer() {
       tid = new Date(`${leggTilDager(dagFor(), -tilbake)}T12:00:00+01:00`);
     }
     registrer(b.id, oppgave, merknad || null, tid);
-    setMelding(`Registrert: ${oppgave.tittel} for ${b.navn}, ${kr(oppgave.belop_ore)}.`);
+    setMelding(`Registrert: ${oppgave.tittel} for ${b.navn}, ${kr(oppgave.belopOre)}.`);
     setOppgaveId(null);
     setMerknad('');
   }
@@ -87,7 +87,7 @@ export default function Registrer() {
         ))}
       </Chips>
       <Knapp
-        tittel={oppgave ? `Registrer som godkjent · ${kr(oppgave.belop_ore)}` : 'Registrer som godkjent'}
+        tittel={oppgave ? `Registrer som godkjent · ${kr(oppgave.belopOre)}` : 'Registrer som godkjent'}
         variant="ok"
         deaktivert={!oppgave || !b}
         onPress={lagre}

@@ -3,13 +3,11 @@ import { Tabs } from 'expo-router/js-tabs';
 
 import { useBarn } from '@/data/familie';
 import { useProfil } from '@/data/profil';
-import { useSanntid } from '@/data/utforelser';
 import { ByttProfilKnapp, FaneIkon } from '@/ui/hode';
 import { useFarger } from '@/ui/tema';
 
 export default function BarnLayout() {
   const f = useFarger();
-  useSanntid();
   const { barnId } = useLocalSearchParams<{ barnId: string }>();
   const { aktiv } = useProfil();
   const barn = useBarn();

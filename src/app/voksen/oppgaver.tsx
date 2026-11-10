@@ -4,7 +4,7 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useArkiverOppgave, useLagreOppgave, useOppgaver } from '@/data/familie';
 import type { Oppgave } from '@/data/typer';
 import { kr, tilOre } from '@/lib/penger';
-import { feiltekst } from '@/lib/supabase';
+import { feiltekst } from '@/lib/firebase';
 import { Chip, Chips, Felt, Feilmelding, Knapp, Laster, Mynt, Rad, Skjerm, T, Tom } from '@/ui/komponenter';
 import { avstand, useFarger } from '@/ui/tema';
 
@@ -36,7 +36,7 @@ export default function Oppgaver() {
                   </T>
                 ) : null}
               </View>
-              <Mynt ore={o.belop_ore} />
+              <Mynt ore={o.belopOre} />
             </Rad>
           ))
         ) : (
@@ -57,7 +57,7 @@ function OppgaveSkjema({ start, onLukk }: { start: Partial<Oppgave>; onLukk: () 
   const lagre = useLagreOppgave();
   const arkiver = useArkiverOppgave();
   const [tittel, setTittel] = useState(start.tittel ?? '');
-  const [belop, setBelop] = useState(start.belop_ore != null ? String(start.belop_ore / 100).replace('.', ',') : '');
+  const [belop, setBelop] = useState(start.belopOre != null ? String(start.belopOre / 100).replace('.', ',') : '');
   const [ikon, setIkon] = useState(start.ikon ?? '⭐');
   const [beskrivelse, setBeskrivelse] = useState(start.beskrivelse ?? '');
   const [forslag, setForslag] = useState((start.forslag ?? []).join(', '));
@@ -69,7 +69,7 @@ function OppgaveSkjema({ start, onLukk }: { start: Partial<Oppgave>; onLukk: () 
     await lagre.mutateAsync({
       id: start.id,
       tittel: tittel.trim(),
-      belop_ore: ore,
+      belopOre: ore,
       ikon,
       beskrivelse: beskrivelse.trim() || null,
       forslag: forslag
@@ -100,9 +100,9 @@ function OppgaveSkjema({ start, onLukk }: { start: Partial<Oppgave>; onLukk: () 
           keyboardType="decimal-pad"
         />
         {belop && ore == null ? <T farge={f.nei}>Skriv et beløp, for eksempel 20 eller 12,50.</T> : null}
-        {start.id && ore != null && ore !== start.belop_ore ? (
+        {start.id && ore != null && ore !== start.belopOre ? (
           <T dempet v="liten">
-            Nytt beløp gjelder fra nå. Tidligere avkrysninger beholder {kr(start.belop_ore)}.
+            Nytt beløp gjelder fra nå. Tidligere avkrysninger beholder {kr(start.belopOre)}.
           </T>
         ) : null}
         <T v="liten" dempet fet>

@@ -1,19 +1,21 @@
-// Radtyper som speiler tabellene i supabase/migrations.
+// Dokumenttyper i Firestore. Alt ligger under familier/{familieId}/...
+// Beløp er i øre (heltall). Tidspunkter lagres som ISO-tekst, uker som mandagens dato (YYYY-MM-DD, norsk tid).
 
-export type Familie = { id: string; navn: string };
+export type Familie = { id: string; navn: string; opprettetAv: string };
 
 export type Voksen = {
-  bruker_id: string;
-  familie_id: string;
+  id: string; // = Firebase Auth uid
   visningsnavn: string;
-  bilde_sti: string | null;
+  /** Lite JPEG-bilde som data-URI, eller null. */
+  bilde: string | null;
+  pinSalt: string;
+  pinHash: string;
 };
 
 export type Barn = {
   id: string;
-  familie_id: string;
   navn: string;
-  bilde_sti: string | null;
+  bilde: string | null;
   farge: string;
   rekkefolge: number;
   arkivert: string | null;
@@ -21,11 +23,10 @@ export type Barn = {
 
 export type Oppgave = {
   id: string;
-  familie_id: string;
   tittel: string;
   beskrivelse: string | null;
   ikon: string | null;
-  belop_ore: number;
+  belopOre: number;
   forslag: string[];
   rekkefolge: number;
   arkivert: string | null;
@@ -35,30 +36,31 @@ export type Status = 'venter' | 'godkjent' | 'avvist';
 
 export type Utforelse = {
   id: string;
-  familie_id: string;
-  barn_id: string;
-  oppgave_id: string;
+  barnId: string;
+  oppgaveId: string;
   merknad: string | null;
-  belop_ore: number;
+  /** Kopi av oppgavens beløp da den ble krysset av. */
+  belopOre: number;
   utfort: string;
-  uke_start: string;
+  ukeStart: string;
   status: Status;
-  registrert_av: string | null;
-  behandlet_av: string | null;
+  registrertAv: string | null;
+  behandletAv: string | null;
   behandlet: string | null;
   kommentar: string | null;
-  nytt_forsok_av: string | null;
+  nyttForsokAv: string | null;
   /** Bare på enheten: ligger i køen og er ikke sendt ennå. */
   ikkeSendt?: boolean;
 };
 
-export type Ukeoppgjor = {
-  familie_id: string;
-  barn_id: string;
-  uke_start: string;
-  tjent_ore: number | null;
-  antall_godkjent: number;
-  antall_venter: number;
-  utbetalt_ore: number | null;
+/** Ukesum per barn. Dokument-ID: `${barnId}_${ukeStart}`. Oppdateres når noe godkjennes. */
+export type Ukesum = {
+  id: string;
+  barnId: string;
+  ukeStart: string;
+  tjentOre: number;
+  antallGodkjent: number;
+  utbetaltOre: number | null;
   utbetalt: string | null;
+  utbetaltAv: string | null;
 };

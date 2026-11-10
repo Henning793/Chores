@@ -15,7 +15,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useBildeUrl } from '@/data/bilder';
 import { kr } from '@/lib/penger';
 import { avstand, radius, useFarger, type Farger } from '@/ui/tema';
 
@@ -270,18 +269,17 @@ export function Chips({ children }: { children: ReactNode }) {
 export function Avatar({
   navn,
   farge,
-  bildeSti,
+  bilde,
   storrelse = 40,
 }: {
   navn: string;
   farge?: string;
-  bildeSti?: string | null;
+  bilde?: string | null;
   storrelse?: number;
 }) {
   const f = useFarger();
-  const { data: url } = useBildeUrl(bildeSti);
   const s = { width: storrelse, height: storrelse, borderRadius: storrelse / 2 };
-  if (url) return <Image source={{ uri: url }} style={s} contentFit="cover" />;
+  if (bilde) return <Image source={{ uri: bilde }} style={s} contentFit="cover" />;
   return (
     <View style={[s, styles.senter, { backgroundColor: farge ?? f.merke }]}>
       <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: storrelse * 0.4 }}>
