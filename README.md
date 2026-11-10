@@ -54,8 +54,9 @@ invitasjoner/{token}                  { familieId, opprettetAv, utloper, brukt, 
 familier/{familieId}                  { navn, opprettetAv }
   voksne/{uid}                        { visningsnavn, bilde, pinSalt, pinHash }
   barn/{id}                           { navn, bilde, farge, rekkefolge, arkivert }
-  oppgaver/{id}                       { tittel, beskrivelse, ikon, belopOre, forslag[], rekkefolge, arkivert }
+  oppgaver/{id}                       { tittel, beskrivelse, ikon, belopOre, forslag[], pauseMin, rekkefolge, arkivert }
   utforelser/{id}                     { barnId, oppgaveId, merknad, belopOre, utfort, ukeStart, status, kommentar, ... }
+  sperrer/{barnId}_{oppgaveId}        { utforelseId, sist }  pause mellom avkrysninger, sjekkes i reglene
   uker/{barnId}_{ukeStart}            { tjentOre, antallGodkjent, utbetaltOre, utbetalt, utbetaltAv }
   push/{token}                        { token, uid, plattform }
 ```

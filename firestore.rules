@@ -19,6 +19,10 @@ service cloud.firestore {
       return innlogget() && exists(voksenSti(familieId, request.auth.uid));
     }
 
+    function sperreSti(familieId, barnId, oppgaveId) {
+      return /databases/$(database)/documents/familier/$(familieId)/sperrer/$(barnId + '_' + oppgaveId);
+    }
+
     function invitasjonSti(token) {
       return /databases/$(database)/documents/invitasjoner/$(token);
     }
@@ -71,9 +75,41 @@ service cloud.firestore {
         );
       }
 
-      // Barn, oppgaver, avkrysninger, ukesummer og push-mottakere: alle voksne i familien.
+      // Barn, oppgaver, ukesummer og push-mottakere: alle voksne i familien.
       match /{samling}/{dokument} {
-        allow read, write: if samling in ['barn', 'oppgaver', 'utforelser', 'uker', 'push'] && medlem(familieId);
+        allow read, write: if samling in ['barn', 'oppgaver', 'uker', 'push'] && medlem(familieId);
+      }
+
+      // Avkrysninger. Når et barn krysser av (status «venter»), må pausen for oppgaven
+      // oppdateres i samme skriving, og den godtas bare når forrige pause er over.
+      match /utforelser/{id} {
+        allow read, update, delete: if medlem(familieId);
+        allow create: if medlem(familieId) && (
+          request.resource.data.status != 'venter'
+          || (
+            getAfter(sperreSti(familieId, request.resource.data.barnId, request.resource.data.oppgaveId)).data.utforelseId == id
+            && getAfter(sperreSti(familieId, request.resource.data.barnId, request.resource.data.oppgaveId)).data.sist == request.time
+          )
+        );
+      }
+
+      // Pause per barn og oppgave. Dokument-ID: {barnId}_{oppgaveId}.
+      // Pausen står på oppgaven (pauseMin, 5 min hvis den mangler). 30 sekunder slakk for klokker som går litt feil.
+      match /sperrer/{sperreId} {
+        allow read: if medlem(familieId);
+        allow create, update: if medlem(familieId)
+          && sperreId == request.resource.data.barnId + '_' + request.resource.data.oppgaveId
+          && request.resource.data.sist == request.time
+          && request.resource.data.utforelseId is string
+          && existsAfter(/databases/$(database)/documents/familier/$(familieId)/utforelser/$(request.resource.data.utforelseId))
+          && (
+            resource == null
+            || request.time + duration.value(30, 's') >= resource.data.sist
+              + duration.value(get(/databases/$(database)/documents/familier/$(familieId)/oppgaver/$(request.resource.data.oppgaveId)).data.get('pauseMin', 5), 'm')
+          );
+        // Pausen kan bare fjernes når avkrysningen den hører til er angret.
+        allow delete: if medlem(familieId)
+          && !existsAfter(/databases/$(database)/documents/familier/$(familieId)/utforelser/$(resource.data.utforelseId));
       }
     }
   }
