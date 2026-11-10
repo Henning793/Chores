@@ -64,7 +64,13 @@ export default function Mer() {
         <Invitasjon />
 
         <Seksjon>Min profil</Seksjon>
-        {aktiv?.type === 'voksen' ? <MinProfil brukerId={aktiv.id} kanEndre={erInnloggetVoksen} /> : null}
+        {aktiv?.type === 'voksen' ? (
+          <MinProfil
+            key={voksne.data?.find((v) => v.id === aktiv.id)?.visningsnavn ?? ''}
+            brukerId={aktiv.id}
+            kanEndre={erInnloggetVoksen}
+          />
+        ) : null}
 
         <Seksjon>Denne enheten</Seksjon>
         <Kort>

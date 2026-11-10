@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="nb">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Ukepenger</title>
+    <!-- Gjør at appen kan legges på hjem-skjermen på iPhone og iPad og åpnes uten Safari-felt. -->
+    <link rel="manifest" href="/chores/manifest.json" />
+    <link rel="apple-touch-icon" href="/chores/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Ukepenger" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <style id="expo-reset">
+      html,
+      body {
+        height: 100%;
+        background-color: #f3f6fb;
+      }
+      body {
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+      @media (prefers-color-scheme: dark) {
+        html,
+        body {
+          background-color: #0e1422;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>Ukepenger trenger JavaScript.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

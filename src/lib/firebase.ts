@@ -1,7 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getReactNativePersistence, initializeAuth, type Auth } from '@firebase/auth';
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { initializeFirestore, type Firestore } from 'firebase/firestore';
+import { browserLocalPersistence, connectAuthEmulator, indexedDBLocalPersistence } from 'firebase/auth';
+import { connectFirestoreEmulator, initializeFirestore, persistentLocalCache, type Firestore } from 'firebase/firestore';
+import { Platform } from 'react-native';
 
 // Verdiene settes i .env (se .env.example). Disse nøklene er ment å ligge i appen;
 // tilgang styres av sikkerhetsreglene i firestore.rules.
@@ -20,11 +22,24 @@ if (!konfig.apiKey || !konfig.projectId || !konfig.appId) {
 const forsteGang = getApps().length === 0;
 export const app = forsteGang ? initializeApp(konfig) : getApp();
 
-// Innloggingen huskes på enheten.
-export const auth: Auth = initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
+const erWeb = Platform.OS === 'web';
 
-// Long polling er mer stabilt i React Native enn WebChannel-strømmer.
-export const db: Firestore = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+// Innloggingen huskes på enheten (i nettleseren på web-versjonen for iPhone og iPad).
+export const auth: Auth = initializeAuth(app, {
+  persistence: erWeb ? [indexedDBLocalPersistence, browserLocalPersistence] : getReactNativePersistence(AsyncStorage),
+});
+
+// På web lagres data i nettleseren, så appen virker uten nett. I React Native er long polling
+// mer stabilt enn WebChannel-strømmer.
+export const db: Firestore = erWeb
+  ? initializeFirestore(app, { localCache: persistentLocalCache() })
+  : initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
+
+// Brukes bare i tester: kobler til lokale Firebase-emulatorer i stedet for det ekte prosjektet.
+if (process.env.EXPO_PUBLIC_BRUK_EMULATOR === '1') {
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
+}
 
 /** Firestore og Auth bruker koden «unavailable»/«network-request-failed» når enheten er uten nett. */
 export function erNettverksfeil(feil: unknown): boolean {

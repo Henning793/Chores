@@ -279,9 +279,9 @@ export function Avatar({
 }) {
   const f = useFarger();
   const s = { width: storrelse, height: storrelse, borderRadius: storrelse / 2 };
-  if (bilde) return <Image source={{ uri: bilde }} style={s} contentFit="cover" />;
+  if (bilde) return <Image source={{ uri: bilde }} style={[s, styles.avatar]} contentFit="cover" />;
   return (
-    <View style={[s, styles.senter, { backgroundColor: farge ?? f.merke }]}>
+    <View style={[s, styles.avatar, { backgroundColor: farge ?? f.merke }]}>
       <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: storrelse * 0.4 }}>
         {navn.slice(0, 1).toUpperCase()}
       </Text>
@@ -372,6 +372,7 @@ const styles = StyleSheet.create({
   rad: { flexDirection: 'row', alignItems: 'center', gap: avstand.m, borderWidth: 1, borderRadius: radius.m, padding: avstand.m },
   tom: { alignItems: 'center', gap: avstand.s, paddingVertical: 40, paddingHorizontal: avstand.l },
   senter: { alignItems: 'center', justifyContent: 'center', flex: 1 },
+  avatar: { alignItems: 'center', justifyContent: 'center', flexShrink: 0, flexGrow: 0, overflow: 'hidden' },
   feil: { borderRadius: radius.s, padding: avstand.m },
   knapp: { borderRadius: radius.m, borderWidth: 1.5, paddingVertical: 14, paddingHorizontal: avstand.l, alignItems: 'center', justifyContent: 'center', minHeight: 50 },
   knappLiten: { paddingVertical: 8, paddingHorizontal: avstand.m, minHeight: 38 },

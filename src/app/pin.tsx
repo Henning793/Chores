@@ -2,14 +2,18 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { useVoksne } from '@/data/familie';
+import { useAuth } from '@/data/auth';
+import { useFamilieId, useVoksne } from '@/data/familie';
 import { sjekkPin, useProfil } from '@/data/profil';
+import { registrerForVarsler } from '@/data/varsler';
 import { Avatar, Feilmelding, PinTastatur, Skjerm, T } from '@/ui/komponenter';
 import { avstand } from '@/ui/tema';
 
 export default function Pin() {
   const { voksen } = useLocalSearchParams<{ voksen: string }>();
   const voksne = useVoksne();
+  const familieId = useFamilieId();
+  const { bruker } = useAuth();
   const { velgVoksen } = useProfil();
   const [pin, setPin] = useState('');
   const [feil, setFeil] = useState<string | null>(null);
@@ -26,6 +30,8 @@ export default function Pin() {
     const svar = await sjekkPin(v, ny).catch(() => 'feil' as const);
     setSjekker(false);
     if (svar === 'riktig') {
+      // Enheter der en voksen har åpnet profilen sin, får varsel når barn krysser av.
+      if (bruker) void registrerForVarsler(familieId, bruker.uid);
       velgVoksen(voksen);
       router.dismissTo('/');
       return;

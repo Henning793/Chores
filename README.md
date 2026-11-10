@@ -84,7 +84,7 @@ familier/{familieId}                  { navn, opprettetAv }
 1. `npx eas-cli@latest init` kobler appen til et Expo-prosjekt og legger `extra.eas.projectId` i app-konfigurasjonen.
 2. **Android:** last opp en FCM-nøkkel til Expo: `npx eas-cli@latest credentials` → Android → Push Notifications (FCM V1),
    med en tjenestekontonøkkel fra Firebase (Prosjektinnstillinger → Tjenestekontoer → Generer ny privat nøkkel).
-3. **iOS:** EAS lager push-nøkkelen automatisk ved første build, med Apple Developer-konto.
+3. **iPhone/iPad** bruker web-appen og får ikke pushvarsler.
 
 Varsler sendes til enheter der en voksen har åpnet profilen sin, men ikke til enheten som krysset av.
 
@@ -97,6 +97,17 @@ npx expo start
 
 Appen bruker native moduler (bildevelger, varsler), så den må bygges med EAS for å kjøre på telefon.
 
+## Web-app for iPhone og iPad (gratis)
+
+iPhone og iPad bruker appen fra nettleseren, så det trengs ingen Apple Developer-konto.
+
+1. Repoet → Settings → Pages → Source: **GitHub Actions** (én gang).
+2. Hver push til `main` bygger og publiserer appen til https://henning793.github.io/chores/ (workflow «Web-app»).
+3. På iPhone/iPad: åpne adressen i Safari → Del → **Legg til på Hjem-skjerm**. Da åpnes den som en egen app uten adresselinje.
+
+Begrensning: ingen pushvarsler på iPhone/iPad. Avkrysninger vises i Godkjenn-fanen og med tall på fanen når en voksen åpner appen.
+Test lokalt med `npx expo start --web`.
+
 ## Bygge appen (EAS)
 
 Byggingen startes fra GitHub, så du trenger ikke noe installert lokalt:
@@ -108,7 +119,7 @@ Byggingen startes fra GitHub, så du trenger ikke noe installert lokalt:
 4. Følg bygget på expo.dev → Projects → ukepenger. Når det er ferdig, åpner du lenken eller QR-koden på telefonen.
 
 Profiler: `preview` er en vanlig testversjon, `development` er for utvikling med `npx expo start`,
-og `production` er for TestFlight og Google Play. iOS-bygg krever Apple Developer-konto.
+og `production` er for Google Play. Vi bygger bare Android; iPhone/iPad bruker web-appen.
 
 ## Sjekker
 

@@ -15,7 +15,10 @@ import { vedKryssSendt, type Jobb } from '@/data/utboks';
 import { db } from '@/lib/firebase';
 import { kr } from '@/lib/penger';
 
-Notifications.setNotificationHandler({
+// Web-versjonen (iPhone/iPad) har ikke pushvarsler; de krever en betalt server.
+const stottet = Platform.OS !== 'web';
+
+if (stottet) Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowBanner: true,
     shouldShowList: true,
@@ -29,7 +32,7 @@ let minToken: string | null = null;
 /** Registrerer denne enheten for varsler til den voksne. Stille hvis det ikke går. */
 export async function registrerForVarsler(familieId: string, uid: string): Promise<void> {
   try {
-    if (!Device.isDevice) return;
+    if (!stottet || !Device.isDevice) return;
     const projectId = Constants.expoConfig?.extra?.eas?.projectId as string | undefined;
     if (!projectId) return; // settes av `eas init`
     if (Platform.OS === 'android') {
@@ -97,6 +100,7 @@ async function sendVarselOmKryss(jobb: Jobb) {
 export function useVarsler() {
   useEffect(() => {
     vedKryssSendt((j) => void sendVarselOmKryss(j));
+    if (!stottet) return () => vedKryssSendt(null);
     const sub = Notifications.addNotificationResponseReceivedListener(() => {
       router.navigate('/');
     });
