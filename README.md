@@ -57,4 +57,4 @@ npx supabase db push
 - Hver voksen har sin egen **PIN** (lagret som hash på serveren, slik at den fungerer på alle familiens enheter).
 - Invitasjonslenker er gyldige i **2 timer**.
 
-Se [docs/design.md](docs/design.md) for skjermflyt og datamodell.
+Se [docs/design.md](docs/design.md) og [docs/design.html](docs/design.html) for skjermflyt og datamodell.

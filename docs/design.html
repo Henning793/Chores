@@ -1,0 +1,469 @@
+<title>Ukepenger designforslag</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: én lesekolonne for tekst, brede rutenett for telefonskisser som brytes til én kolonne på mobil. */
+:root {
+  --bg: #F3F6FB;
+  --surface: #FFFFFF;
+  --ink: #18243D;
+  --muted: #5B6880;
+  --line: #DCE3EF;
+  --brand: #2F5BEA;
+  --brand-soft: #E3EAFF;
+  --coin: #FFC43D;
+  --coin-ink: #6B4A00;
+  --ok: #1E9E6A;
+  --ok-soft: #DDF5EA;
+  --no: #D9534F;
+  --no-soft: #FBE3E2;
+  --wait: #B7791F;
+  --wait-soft: #FFF1D6;
+  --phone: #0F1729;
+  --screen: #FFFFFF;
+  --f-display: "Fredoka", "Nunito", system-ui, sans-serif;
+  --f-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1422; --surface: #172036; --ink: #E8EDF8; --muted: #9AA7C0; --line: #2A3652;
+  --brand: #7C9BFF; --brand-soft: #22305A; --coin: #FFCF5C; --coin-ink: #3D2A00;
+  --ok: #4CC994; --ok-soft: #173A2D; --no: #F07B77; --no-soft: #432224; --wait: #F0B65A; --wait-soft: #3B2E14;
+  --phone: #000000; --screen: #121A2C; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0E1422; --surface: #172036; --ink: #E8EDF8; --muted: #9AA7C0; --line: #2A3652;
+  --brand: #7C9BFF; --brand-soft: #22305A; --coin: #FFCF5C; --coin-ink: #3D2A00;
+  --ok: #4CC994; --ok-soft: #173A2D; --no: #F07B77; --no-soft: #432224; --wait: #F0B65A; --wait-soft: #3B2E14;
+  --phone: #000000; --screen: #121A2C; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; }
+h2 { font-size: 1.7rem; font-weight: 600; margin-top: 56px; margin-bottom: 12px; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0 0 12px; }
+.eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: .78rem; font-weight: 800; color: var(--brand); }
+.lead { font-size: 1.15rem; color: var(--muted); margin-top: 12px; }
+.status { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; padding: 6px 12px; border-radius: 999px;
+  background: var(--wait-soft); color: var(--wait); font-weight: 800; font-size: .9rem; }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--wait); }
+nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+nav.toc a { color: var(--ink); text-decoration: none; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-weight: 700; font-size: .9rem; background: var(--surface); }
+nav.toc a:hover, nav.toc a:focus-visible { border-color: var(--brand); color: var(--brand); outline: none; }
+a { color: var(--brand); }
+
+/* Beslutninger */
+.decisions { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 16px; }
+.decision { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.decision .q { font-weight: 800; }
+.decision .rec { background: var(--brand-soft); border-radius: 10px; padding: 10px 12px; font-size: .95rem; }
+.decision .rec b { color: var(--brand); }
+.decision .alt { font-size: .9rem; color: var(--muted); }
+.tag { display: inline-block; font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+/* Telefonskisser */
+.phones { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 28px 20px; margin-top: 20px; }
+figure { margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+figcaption { font-size: .92rem; color: var(--muted); }
+figcaption b { color: var(--ink); display: block; font-family: var(--f-display); font-weight: 600; font-size: 1.02rem; }
+.phone { width: 100%; max-width: 270px; aspect-ratio: 9 / 18.5; background: var(--phone); border-radius: 34px; padding: 10px; }
+.scr { background: var(--screen); border-radius: 26px; height: 100%; overflow: hidden; display: flex; flex-direction: column; font-size: 12.5px; position: relative; }
+.bar { height: 22px; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; font-size: 10px; font-weight: 800; color: var(--muted); flex: none; }
+.top { padding: 6px 14px 10px; display: flex; align-items: center; gap: 8px; flex: none; }
+.top h4 { margin: 0; font-family: var(--f-display); font-size: 17px; font-weight: 600; flex: 1; }
+.body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; overflow: hidden; }
+.av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: #fff; flex: none; font-size: 13px; }
+.av.lg { width: 64px; height: 64px; font-size: 24px; }
+.a1 { background: #F28C38; } .a2 { background: #8B5CF6; } .a3 { background: #2F5BEA; } .a4 { background: #1E9E6A; }
+.btn { border-radius: 12px; padding: 9px 12px; text-align: center; font-weight: 800; background: var(--brand); color: #fff; }
+.btn.ghost { background: transparent; color: var(--brand); border: 1.5px solid var(--brand); }
+.btn.ok { background: var(--ok); } .btn.no { background: var(--no-soft); color: var(--no); }
+.field { border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 10px; color: var(--muted); }
+.row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.row .t { flex: 1; min-width: 0; }
+.row .t b { display: block; font-size: 13px; }
+.row .t span { color: var(--muted); font-size: 11px; }
+.kr { font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.coin { background: var(--coin); color: var(--coin-ink); border-radius: 999px; padding: 2px 8px; font-weight: 800; font-size: 11px; white-space: nowrap; }
+.chk { width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--brand); display: grid; place-items: center; color: var(--brand); font-weight: 800; flex: none; }
+.pill { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; white-space: nowrap; }
+.p-wait { background: var(--wait-soft); color: var(--wait); } .p-ok { background: var(--ok-soft); color: var(--ok); } .p-no { background: var(--no-soft); color: var(--no); }
+.hero { background: var(--brand); color: #fff; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.hero .big { font-family: var(--f-display); font-size: 28px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.hero small { opacity: .85; }
+.prog { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.prog i { display: block; height: 100%; background: var(--coin); border-radius: 999px; }
+.stars { color: var(--coin); letter-spacing: 1px; font-size: 13px; }
+.who { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.who > div { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border: 1px solid var(--line); border-radius: 14px; text-align: center; font-weight: 800; }
+.who small { font-weight: 600; color: var(--muted); font-size: 10px; }
+.sect { font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+.dots { display: flex; gap: 12px; justify-content: center; margin: 10px 0; }
+.dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--brand); }
+.dots i.f { background: var(--brand); }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 12px; }
+.pad span { aspect-ratio: 1.6; border-radius: 12px; background: var(--brand-soft); display: grid; place-items: center; font-family: var(--f-display); font-size: 18px; font-weight: 600; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--screen); border-radius: 20px 20px 0 0; padding: 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 -10px 30px rgba(0,0,0,.25); }
+.dim { position: absolute; inset: 0; background: rgba(10,16,30,.45); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { border: 1.5px solid var(--line); border-radius: 999px; padding: 3px 9px; font-weight: 700; font-size: 11px; }
+.chips span.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); }
+.tabs { display: flex; justify-content: space-around; border-top: 1px solid var(--line); padding: 8px 4px 10px; font-size: 9.5px; font-weight: 800; color: var(--muted); flex: none; }
+.tabs .on { color: var(--brand); }
+.card { border: 1px solid var(--line); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.split { display: flex; gap: 6px; } .split > * { flex: 1; }
+.note { font-size: 11px; color: var(--muted); }
+
+/* Flyt og datamodell */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; overflow-x: auto; }
+.tables { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 16px; }
+.tbl { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; }
+.tbl h3 { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .95rem; font-weight: 700; margin-bottom: 6px; }
+.tbl p { color: var(--muted); font-size: .9rem; }
+.tbl ul { margin: 0; padding-left: 18px; font-size: .88rem; }
+.tbl code { font-size: .85rem; }
+ul.plain { padding-left: 20px; } ul.plain li { margin-bottom: 6px; }
+.phases { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-top: 16px; }
+.phase { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.phase .tag { color: var(--brand); }
+.phase ul { margin: 8px 0 0; padding-left: 18px; font-size: .92rem; }
+@media (prefers-reduced-motion: no-preference) { nav.toc a { transition: border-color .15s, color .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="prose">
+    <div class="eyebrow">Designforslag v1 · 10. november 2026</div>
+    <h1>Ukepenger</h1>
+    <p class="lead">Barna krysser av det de har gjort hjemme, en voksen godkjenner, og alt som er godkjent fra mandag til søndag blir ukens ukepenger. Én app for iPhone, Android og iPad, med Supabase i bakkant.</p>
+    <div class="status">Venter på din godkjenning før noe bygges</div>
+    <nav class="toc" aria-label="Innhold">
+      <a href="#avklaringer">Avklaringer</a><a href="#flyt">Skjermflyt</a><a href="#skisser">Skisser</a><a href="#data">Datamodell</a><a href="#teknisk">Teknisk</a><a href="#plan">Byggeplan</a>
+    </nav>
+  </header>
+
+  <section id="avklaringer">
+    <h2>Fem ting du bør ta stilling til</h2>
+    <p class="prose">Alt annet i designet følger svarene dine direkte. Her har jeg valgt en standard der du ikke har bestemt noe. Si «godkjent» hvis forslagene passer, eller rett opp det du vil ha annerledes.</p>
+    <div class="decisions">
+      <div class="decision">
+        <span class="tag">1 · Utbetaling</span>
+        <div class="q">Hvordan registrerer du at ukepengene er betalt?</div>
+        <div class="rec"><b>Forslag:</b> Under «Ukeoppgjør» vises hver uke per barn med sum. Én knapp, «Marker som betalt», låser uka. Ingen saldo som tas med videre.</div>
+        <div class="alt">Alternativ: en løpende saldo der du trekker fra beløp du har betalt ut.</div>
+      </div>
+      <div class="decision">
+        <span class="tag">2 · iPaden</span>
+        <div class="q">Trenger iPaden en låst barnemodus?</div>
+        <div class="rec"><b>Forslag:</b> Nei som standard. Barneprofiler er åpne, slik du ønsket. I innstillinger kan du slå på «Lås enheten til ett barn», og da kreves voksen-PIN for å bytte profil.</div>
+        <div class="alt">Uten lås kan søsken krysse av for hverandre, men alt må uansett godkjennes av en voksen.</div>
+      </div>
+      <div class="decision">
+        <span class="tag">3 · Gamification</span>
+        <div class="q">Hva skal barna samle på?</div>
+        <div class="rec"><b>Forslag:</b> Én stjerne per godkjent oppgave, sparemål med fremdriftsstolpe, «dager på rad»-teller og merker (f.eks. «Første oppgave», «5 dager på rad», «100 kr tjent»).</div>
+        <div class="alt">Ingen stjerner trekkes fra ved avvisning.</div>
+      </div>
+      <div class="decision">
+        <span class="tag">4 · Beløp</span>
+        <div class="q">Hva skjer hvis du endrer beløpet på en oppgave?</div>
+        <div class="rec"><b>Forslag:</b> Beløpet låses når barnet krysser av. En endring gjelder bare nye avkrysninger, så gamle uker forblir riktige.</div>
+        <div class="alt">Den som godkjenner kan justere beløpet på én enkelt avkrysning.</div>
+      </div>
+      <div class="decision">
+        <span class="tag">5 · Uten nett</span>
+        <div class="q">Hva fungerer offline?</div>
+        <div class="rec"><b>Forslag:</b> Barn kan krysse av, og voksne kan godkjenne. Alt lagres på enheten og sendes når nettet er tilbake. Å endre oppgaver, barn og invitasjoner krever nett.</div>
+        <div class="alt">Pushvarsel sendes først når avkrysningen er synkronisert.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="flyt">
+    <h2>Skjermflyt</h2>
+    <p class="prose">Innlogging skjer én gang per enhet med en voksen sin konto. Etter det starter appen alltid på «Hvem bruker appen?».</p>
+    <div class="panel">
+<pre class="mermaid">
+flowchart LR
+  A[Logg inn<br/>e-postkode eller Google] --> B{Har familie?}
+  B -- Nei --> C[Opprett familie<br/>og velg PIN]
+  B -- Invitasjonslenke --> D[Bli med i familie<br/>og velg PIN]
+  B -- Ja --> E
+  C --> E[Hvem bruker appen?]
+  D --> E
+  E -- Barneprofil --> F[Mine oppgaver]
+  F --> F1[Kryss av oppgave<br/>+ hvor/merknad]
+  F --> F2[Mine uker og stjerner]
+  F --> F3[Sparemål og merker]
+  E -- Voksenprofil --> P[PIN]
+  P --> G[Til godkjenning]
+  G --> G1[Godkjenn / avvis<br/>med kommentar]
+  G --> H[Registrer for barn]
+  G --> I[Ukeoppgjør<br/>marker som betalt]
+  G --> J[Oppgaver og beløp]
+  G --> K[Innstillinger<br/>barn, voksne, invitasjon, PIN]
+  F1 -. pushvarsel .-> G
+</pre>
+    </div>
+  </section>
+
+  <section id="skisser">
+    <h2>Skisser</h2>
+    <p class="prose">Navnene er eksempler. På iPad vises de samme skjermene med to kolonner der det gir mening, for eksempel oppgavelisten ved siden av ukesummen.</p>
+
+    <div class="phones">
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="body" style="justify-content:center; gap:12px">
+            <div style="text-align:center"><div style="font-size:36px">🪙</div>
+              <div style="font-family:var(--f-display); font-size:24px; font-weight:700">Ukepenger</div>
+              <div class="note">For hele familien</div></div>
+            <div class="field">din@epost.no</div>
+            <div class="btn">Send meg en kode</div>
+            <div class="note" style="text-align:center">eller</div>
+            <div class="btn ghost">Fortsett med Google</div>
+            <div class="note" style="text-align:center">Ingen passord. Du får en sekssifret kode på e-post.</div>
+          </div>
+        </div></div>
+        <figcaption><b>Logg inn</b>Gjøres én gang per enhet. Apple-innlogging kommer senere.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="top"><h4>Hvem bruker appen?</h4></div>
+          <div class="body">
+            <div class="sect">Barn</div>
+            <div class="who">
+              <div><span class="av lg a1">E</span>Emma<small>⭐ 12 denne uka</small></div>
+              <div><span class="av lg a2">J</span>Jonas<small>⭐ 7 denne uka</small></div>
+            </div>
+            <div class="sect">Voksne</div>
+            <div class="who">
+              <div><span class="av a3">H</span>Henning<small>🔒 PIN</small></div>
+              <div><span class="av a4">K</span>Kari<small>🔒 PIN · 3 venter</small></div>
+            </div>
+          </div>
+        </div></div>
+        <figcaption><b>Hvem bruker appen?</b>Forsiden. Barneprofiler er åpne, voksne krever egen PIN.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="body" style="justify-content:center; padding:0">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:6px">
+              <span class="av lg a3">H</span>
+              <div style="font-family:var(--f-display); font-size:18px; font-weight:600">Hei, Henning</div>
+              <div class="note">Skriv inn PIN-koden din</div>
+            </div>
+            <div class="dots"><i class="f"></i><i class="f"></i><i></i><i></i></div>
+            <div class="pad"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span style="font-size:11px">Avbryt</span><span>0</span><span>⌫</span></div>
+            <div class="note" style="text-align:center; margin-top:8px">Face ID / fingeravtrykk kan slås på</div>
+          </div>
+        </div></div>
+        <figcaption><b>PIN</b>Fire sifre per voksen. Sperres i fem minutter etter fem feil forsøk.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="top"><span class="av a1">E</span><h4>Hei, Emma!</h4><span class="note">Bytt</span></div>
+          <div class="body">
+            <div class="hero"><small>Uke 46 · tjent så langt</small><div class="big">85 kr</div><small><span class="stars">★★★★★</span> 12 stjerner · 🔥 4 dager på rad</small></div>
+            <div class="sect">Hva har du gjort?</div>
+            <div class="row"><span>🧹</span><div class="t"><b>Ryddet</b><span>Stue, rommet ditt …</span></div><span class="coin">20 kr</span><span class="chk">+</span></div>
+            <div class="row"><span>🍽️</span><div class="t"><b>Tømt oppvaskmaskin</b></div><span class="coin">15 kr</span><span class="chk">+</span></div>
+            <div class="row"><span>🐕</span><div class="t"><b>Gått tur med hunden</b></div><span class="coin">25 kr</span><span class="chk">+</span></div>
+            <div class="sect">I dag</div>
+            <div class="row"><div class="t"><b>Ryddet · stuen</b><span>08:12</span></div><span class="pill p-wait">Venter</span></div>
+            <div class="row"><div class="t"><b>Ryddet · rommet</b><span>07:40 · «Glemte sengen»</span></div><span class="pill p-no">Prøv igjen</span></div>
+          </div>
+          <div class="tabs"><span class="on">Oppgaver</span><span>Mine uker</span><span>Sparemål</span></div>
+        </div></div>
+        <figcaption><b>Barn: Mine oppgaver</b>Store knapper som kan trykkes mange ganger per dag. Avviste oppgaver viser kommentaren og kan prøves på nytt.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="top"><span class="av a1">E</span><h4>Hei, Emma!</h4></div>
+          <div class="body"><div class="hero"><small>Uke 46</small><div class="big">85 kr</div></div></div>
+          <div class="dim"></div>
+          <div class="sheet">
+            <div style="font-family:var(--f-display); font-size:17px; font-weight:600">🧹 Ryddet</div>
+            <div class="note">Hvor ryddet du? (valgfritt)</div>
+            <div class="chips"><span class="on">Stuen</span><span>Rommet mitt</span><span>Kjøkkenet</span><span>Gangen</span><span>+ Annet</span></div>
+            <div class="field">Skriv noe til mamma eller pappa …</div>
+            <div class="btn">Ferdig! Send til godkjenning</div>
+            <div class="note" style="text-align:center">Du får <b>20 kr</b> og en ⭐ når det er godkjent</div>
+          </div>
+        </div></div>
+        <figcaption><b>Barn: Kryss av</b>Forelderen kan legge inn forslag til steder per oppgave, så barnet bare trykker.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="top"><h4>Til godkjenning</h4><span class="pill p-wait">3</span></div>
+          <div class="body">
+            <div class="card">
+              <div style="display:flex; gap:8px; align-items:center"><span class="av a1">E</span><div class="t" style="flex:1"><b>Ryddet · stuen</b><div class="note">Emma · i dag 08:12</div></div><span class="kr">20 kr</span></div>
+              <div class="split"><div class="btn no">Avvis</div><div class="btn ok">Godkjenn</div></div>
+            </div>
+            <div class="card">
+              <div style="display:flex; gap:8px; align-items:center"><span class="av a2">J</span><div class="t" style="flex:1"><b>Tømt oppvaskmaskin</b><div class="note">Jonas · i går 19:30</div></div><span class="kr">15 kr</span></div>
+              <div class="field" style="font-size:11px">Kommentar: Bestikket ligger fortsatt i …</div>
+              <div class="split"><div class="btn no">Send avvisning</div></div>
+            </div>
+            <div class="btn ghost">Godkjenn alle (3)</div>
+          </div>
+          <div class="tabs"><span class="on">Godkjenn</span><span>Registrer</span><span>Uker</span><span>Oppgaver</span><span>Mer</span></div>
+        </div></div>
+        <figcaption><b>Voksen: Til godkjenning</b>Åpnes fra pushvarselet. Avvisning krever en kort kommentar som barnet ser.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="top"><h4>Registrer oppgave</h4></div>
+          <div class="body">
+            <div class="sect">Hvem?</div>
+            <div class="chips"><span class="on">Emma</span><span>Jonas</span></div>
+            <div class="sect">Hva?</div>
+            <div class="chips"><span>🧹 Ryddet</span><span class="on">🍽️ Oppvask</span><span>🐕 Hundetur</span><span>🗑️ Søppel</span></div>
+            <div class="sect">Når?</div>
+            <div class="field">I dag, 18:30</div>
+            <div class="field">Merknad (valgfritt)</div>
+            <div class="btn ok">Registrer som godkjent · 15 kr</div>
+            <div class="note">For når barnet glemte å krysse av selv.</div>
+          </div>
+          <div class="tabs"><span>Godkjenn</span><span class="on">Registrer</span><span>Uker</span><span>Oppgaver</span><span>Mer</span></div>
+        </div></div>
+        <figcaption><b>Voksen: Registrer</b>Legges rett inn som godkjent. Tidspunktet bestemmer hvilken uke det teller i.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="top"><h4>Ukeoppgjør</h4></div>
+          <div class="body">
+            <div class="sect">Uke 46 · 9.–15. nov · pågår</div>
+            <div class="row"><span class="av a1">E</span><div class="t"><b>Emma</b><span>12 oppgaver · 1 venter</span></div><span class="kr">85 kr</span></div>
+            <div class="row"><span class="av a2">J</span><div class="t"><b>Jonas</b><span>7 oppgaver</span></div><span class="kr">60 kr</span></div>
+            <div class="sect">Uke 45 · 2.–8. nov</div>
+            <div class="row"><span class="av a1">E</span><div class="t"><b>Emma</b><span>15 oppgaver</span></div><span class="kr">110 kr</span></div>
+            <div class="btn" style="padding:6px">Marker 110 kr som betalt</div>
+            <div class="row"><span class="av a2">J</span><div class="t"><b>Jonas</b><span>Betalt 9. nov</span></div><span class="pill p-ok">90 kr ✓</span></div>
+          </div>
+          <div class="tabs"><span>Godkjenn</span><span>Registrer</span><span class="on">Uker</span><span>Oppgaver</span><span>Mer</span></div>
+        </div></div>
+        <figcaption><b>Voksen: Ukeoppgjør</b>Ny uke starter mandag. All historikk beholdes, og du kan se hvert barn uke for uke.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="top"><h4>Oppgaver og beløp</h4><span class="btn" style="padding:4px 10px">+ Ny</span></div>
+          <div class="body">
+            <div class="row"><span>🧹</span><div class="t"><b>Ryddet</b><span>Stuen, rommet mitt, kjøkkenet</span></div><span class="kr">20 kr</span></div>
+            <div class="row"><span>🍽️</span><div class="t"><b>Tømt oppvaskmaskin</b></div><span class="kr">15 kr</span></div>
+            <div class="row"><span>🐕</span><div class="t"><b>Gått tur med hunden</b></div><span class="kr">25 kr</span></div>
+            <div class="row"><span>🗑️</span><div class="t"><b>Tatt ut søppel</b></div><span class="kr">10 kr</span></div>
+            <div class="card">
+              <b>Endre «Ryddet»</b>
+              <div class="split"><div class="field">Ryddet</div><div class="field" style="flex:.6">20 kr</div></div>
+              <div class="note">Nytt beløp gjelder fra nå. Tidligere avkrysninger beholder sitt beløp.</div>
+            </div>
+          </div>
+          <div class="tabs"><span>Godkjenn</span><span>Registrer</span><span>Uker</span><span class="on">Oppgaver</span><span>Mer</span></div>
+        </div></div>
+        <figcaption><b>Voksen: Oppgaver</b>Felles for alle barn. Arkiveres i stedet for å slettes, så historikken består.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="top"><span class="av a1">E</span><h4>Sparemål</h4></div>
+          <div class="body">
+            <div class="card">
+              <div style="display:flex; justify-content:space-between"><b>🛹 Nytt skateboard</b><span class="kr">340 / 600 kr</span></div>
+              <div class="prog"><i style="width:57%"></i></div>
+              <div class="note">Omtrent 3 uker til med samme tempo</div>
+            </div>
+            <div class="sect">Merker</div>
+            <div class="chips"><span class="on">🌟 Første oppgave</span><span class="on">🔥 5 dager på rad</span><span class="on">💯 100 kr</span><span>🏆 50 stjerner</span><span>🧽 Ryddemester</span></div>
+            <div class="sect">Mine uker</div>
+            <div class="row"><div class="t"><b>Uke 45</b><span>15 ⭐</span></div><span class="kr">110 kr</span></div>
+            <div class="row"><div class="t"><b>Uke 44</b><span>11 ⭐</span></div><span class="kr">80 kr</span></div>
+          </div>
+          <div class="tabs"><span>Oppgaver</span><span>Mine uker</span><span class="on">Sparemål</span></div>
+        </div></div>
+        <figcaption><b>Barn: Sparemål og merker</b>Fremdriften regnes av alt tjent siden målet ble opprettet.</figcaption>
+      </figure>
+
+      <figure>
+        <div class="phone"><div class="scr">
+          <div class="bar"><span>09:41</span><span>●●●</span></div>
+          <div class="top"><h4>Inviter voksen</h4></div>
+          <div class="body">
+            <div class="card" style="align-items:center; text-align:center">
+              <div style="font-size:30px">✉️</div>
+              <b>Del lenken med den du vil invitere</b>
+              <div class="field" style="width:100%; font-size:10.5px">ukepenger.app/inviter/8f3c…</div>
+              <div class="pill p-wait">Gyldig i 1 t 58 min</div>
+            </div>
+            <div class="btn">Del via SMS, e-post …</div>
+            <div class="btn ghost">Kopier lenke</div>
+            <div class="note">Lenken kan brukes én gang. Den som blir med, får samme rettigheter som deg.</div>
+          </div>
+          <div class="tabs"><span>Godkjenn</span><span>Registrer</span><span>Uker</span><span>Oppgaver</span><span class="on">Mer</span></div>
+        </div></div>
+        <figcaption><b>Voksen: Inviter</b>Bruker telefonens vanlige delemeny. Utløper etter to timer.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="data">
+    <h2>Datamodell</h2>
+    <p class="prose">Beløp lagres i øre for å unngå avrundingsfeil. Ukesummene regnes ut fra hver enkelt avkrysning, så ingenting må nullstilles mandag og all historikk blir liggende. Uka følger norsk tid, så en oppgave krysset av søndag 23:30 teller i den uka som slutter.</p>
+    <div class="tables">
+      <div class="tbl"><h3>familier</h3><p>Én per husholdning.</p><ul><li><code>navn</code></li></ul></div>
+      <div class="tbl"><h3>voksne</h3><p>Kobler en innlogget bruker til en familie. Alle er likestilte.</p><ul><li><code>visningsnavn</code>, <code>bilde</code></li></ul></div>
+      <div class="tbl"><h3>voksen_pin</h3><p>PIN lagret som kryptert hash på serveren, slik at Kari kan låse opp sin profil på Emmas iPad.</p><ul><li><code>pin_hash</code>, <code>feil_forsok</code>, <code>last_til</code></li></ul></div>
+      <div class="tbl"><h3>invitasjoner</h3><p>Engangslenke som utløper etter 2 timer.</p><ul><li><code>token_hash</code>, <code>utloper</code>, <code>brukt</code></li></ul></div>
+      <div class="tbl"><h3>barn</h3><p>Profil uten egen innlogging.</p><ul><li><code>navn</code>, <code>bilde</code> (fra galleri), <code>farge</code></li></ul></div>
+      <div class="tbl"><h3>oppgaver</h3><p>Felles for familien, arkiveres i stedet for å slettes.</p><ul><li><code>tittel</code>, <code>beskrivelse</code>, <code>ikon</code>, <code>belop_ore</code></li></ul></div>
+      <div class="tbl"><h3>utforelser</h3><p>Én rad per gang et barn gjør en oppgave.</p><ul><li><code>barn</code>, <code>oppgave</code>, <code>merknad</code> («stuen»)</li><li><code>belop_ore</code> låst ved avkrysning</li><li><code>status</code>: venter, godkjent, avvist</li><li><code>kommentar</code>, <code>behandlet_av</code></li><li><code>uke_start</code> (mandag)</li></ul></div>
+      <div class="tbl"><h3>utbetalinger</h3><p>«Marker som betalt», én per barn per uke.</p><ul><li><code>uke_start</code>, <code>belop_ore</code>, <code>utbetalt_av</code></li></ul></div>
+      <div class="tbl"><h3>sparemal · barn_merker</h3><p>Gamification. Stjerner og «dager på rad» regnes ut, de lagres ikke.</p><ul><li><code>tittel</code>, <code>mal_ore</code>, <code>nadd</code></li><li><code>merke</code>, <code>oppnadd</code></li></ul></div>
+      <div class="tbl"><h3>push_mottakere</h3><p>Enheter som skal få varsel når noe venter på godkjenning.</p><ul><li><code>expo_token</code>, <code>bruker</code></li></ul></div>
+    </div>
+  </section>
+
+  <section id="teknisk" class="prose">
+    <h2>Teknisk</h2>
+    <ul class="plain">
+      <li><b>Tilgang:</b> Hver voksen ser bare sin egen families data. Dette håndheves i databasen (Row Level Security), ikke bare i appen.</li>
+      <li><b>Godkjenning</b> skjer via en egen databasefunksjon, så status ikke kan endres fra barnevisningen.</li>
+      <li><b>Pushvarsel:</b> Når en avkrysning kommer inn, sender en Supabase-funksjon varsel til alle voksne i familien via Expo.</li>
+      <li><b>Offline:</b> Avkrysninger og godkjenninger legges i en kø på enheten med egen ID og sendes når nettet er tilbake. Samme ID to ganger lagres bare én gang.</li>
+      <li><b>Bilder</b> velges fra galleriet, skaleres ned på enheten og lagres i Supabase Storage.</li>
+      <li><b>Testing for familie og venner:</b> EAS Build til TestFlight på iOS og intern testing på Google Play. Krever Apple Developer-konto (99 USD i året) for TestFlight.</li>
+    </ul>
+  </section>
+
+  <section id="plan">
+    <h2>Byggeplan etter godkjenning</h2>
+    <div class="phases">
+      <div class="phase"><span class="tag">Steg 1</span><h3>Grunnmur</h3><ul><li>Supabase-prosjekt og skjema</li><li>Innlogging og opprett familie</li><li>Barn, voksne, PIN og profilvelger</li></ul></div>
+      <div class="phase"><span class="tag">Steg 2</span><h3>Kjernen</h3><ul><li>Oppgaver og beløp</li><li>Kryss av, godkjenn, avvis</li><li>Registrer for barn</li><li>Ukeoppgjør og historikk</li></ul></div>
+      <div class="phase"><span class="tag">Steg 3</span><h3>Familien</h3><ul><li>Invitasjonslenke</li><li>Pushvarsler</li><li>Offline-kø</li></ul></div>
+      <div class="phase"><span class="tag">Steg 4</span><h3>Moro og testing</h3><ul><li>Stjerner, sparemål, merker</li><li>iPad-tilpasning</li><li>TestFlight og intern testing</li></ul></div>
+    </div>
+  </section>
+</div>
