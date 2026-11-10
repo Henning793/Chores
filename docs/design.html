@@ -136,18 +136,18 @@ ul.plain { padding-left: 20px; } ul.plain li { margin-bottom: 6px; }
 
 <div class="wrap">
   <header class="prose">
-    <div class="eyebrow">Designforslag v1 · 10. november 2026</div>
+    <div class="eyebrow">Design v1 · godkjent 10. november 2026 · oppdatert for Firebase</div>
     <h1>Ukepenger</h1>
-    <p class="lead">Barna krysser av det de har gjort hjemme, en voksen godkjenner, og alt som er godkjent fra mandag til søndag blir ukens ukepenger. Én app for iPhone, Android og iPad, med Supabase i bakkant.</p>
-    <div class="status">Venter på din godkjenning før noe bygges</div>
+    <p class="lead">Barna krysser av det de har gjort hjemme, en voksen godkjenner, og alt som er godkjent fra mandag til søndag blir ukens ukepenger. Én app for iPhone, Android og iPad, med Firebase i bakkant på gratisplanen.</p>
+    <div class="status">Godkjent. Første versjon er under bygging.</div>
     <nav class="toc" aria-label="Innhold">
       <a href="#avklaringer">Avklaringer</a><a href="#flyt">Skjermflyt</a><a href="#skisser">Skisser</a><a href="#data">Datamodell</a><a href="#teknisk">Teknisk</a><a href="#plan">Byggeplan</a>
     </nav>
   </header>
 
   <section id="avklaringer">
-    <h2>Fem ting du bør ta stilling til</h2>
-    <p class="prose">Alt annet i designet følger svarene dine direkte. Her har jeg valgt en standard der du ikke har bestemt noe. Si «godkjent» hvis forslagene passer, eller rett opp det du vil ha annerledes.</p>
+    <h2>Fem valgte standarder</h2>
+    <p class="prose">Alt annet i designet følger svarene dine direkte. Disse standardene ble godkjent 10. november.</p>
     <div class="decisions">
       <div class="decision">
         <span class="tag">1 · Utbetaling</span>
@@ -188,7 +188,7 @@ ul.plain { padding-left: 20px; } ul.plain li { margin-bottom: 6px; }
     <div class="panel">
 <pre class="mermaid">
 flowchart LR
-  A[Logg inn<br/>e-postkode eller Google] --> B{Har familie?}
+  A[Logg inn<br/>e-post og passord, eller Google] --> B{Har familie?}
   B -- Nei --> C[Opprett familie<br/>og velg PIN]
   B -- Invitasjonslenke --> D[Bli med i familie<br/>og velg PIN]
   B -- Ja --> E
@@ -223,13 +223,14 @@ flowchart LR
               <div style="font-family:var(--f-display); font-size:24px; font-weight:700">Ukepenger</div>
               <div class="note">For hele familien</div></div>
             <div class="field">din@epost.no</div>
-            <div class="btn">Send meg en kode</div>
+            <div class="field">••••••••</div>
+            <div class="btn">Logg inn</div>
             <div class="note" style="text-align:center">eller</div>
             <div class="btn ghost">Fortsett med Google</div>
-            <div class="note" style="text-align:center">Ingen passord. Du får en sekssifret kode på e-post.</div>
+            <div class="note" style="text-align:center">Ny bruker · Glemt passord?</div>
           </div>
         </div></div>
-        <figcaption><b>Logg inn</b>Gjøres én gang per enhet. Apple-innlogging kommer senere.</figcaption>
+        <figcaption><b>Logg inn</b>Gjøres én gang per enhet. E-post og passord, siden Firebase ikke har innlogging med kode. Apple-innlogging kommer senere.</figcaption>
       </figure>
 
       <figure>
@@ -266,7 +267,7 @@ flowchart LR
             <div class="note" style="text-align:center; margin-top:8px">Face ID / fingeravtrykk kan slås på</div>
           </div>
         </div></div>
-        <figcaption><b>PIN</b>Fire sifre per voksen. Sperres i fem minutter etter fem feil forsøk.</figcaption>
+        <figcaption><b>PIN</b>Fire sifre per voksen. Sjekkes på enheten, også uten nett. Sperres i fem minutter etter fem feil forsøk.</figcaption>
       </figure>
 
       <figure>
@@ -430,29 +431,28 @@ flowchart LR
 
   <section id="data">
     <h2>Datamodell</h2>
-    <p class="prose">Beløp lagres i øre for å unngå avrundingsfeil. Ukesummene regnes ut fra hver enkelt avkrysning, så ingenting må nullstilles mandag og all historikk blir liggende. Uka følger norsk tid, så en oppgave krysset av søndag 23:30 teller i den uka som slutter.</p>
+    <p class="prose">Data ligger i Cloud Firestore under hver familie. Beløp lagres i øre for å unngå avrundingsfeil. Hver avkrysning vet hvilken uke den hører til, og ukesummen oppdateres når noe godkjennes, så ingenting må nullstilles mandag og all historikk blir liggende. Uka følger norsk tid, så en oppgave krysset av søndag 23:30 teller i den uka som slutter.</p>
     <div class="tables">
-      <div class="tbl"><h3>familier</h3><p>Én per husholdning.</p><ul><li><code>navn</code></li></ul></div>
-      <div class="tbl"><h3>voksne</h3><p>Kobler en innlogget bruker til en familie. Alle er likestilte.</p><ul><li><code>visningsnavn</code>, <code>bilde</code></li></ul></div>
-      <div class="tbl"><h3>voksen_pin</h3><p>PIN lagret som kryptert hash på serveren, slik at Kari kan låse opp sin profil på Emmas iPad.</p><ul><li><code>pin_hash</code>, <code>feil_forsok</code>, <code>last_til</code></li></ul></div>
-      <div class="tbl"><h3>invitasjoner</h3><p>Engangslenke som utløper etter 2 timer.</p><ul><li><code>token_hash</code>, <code>utloper</code>, <code>brukt</code></li></ul></div>
-      <div class="tbl"><h3>barn</h3><p>Profil uten egen innlogging.</p><ul><li><code>navn</code>, <code>bilde</code> (fra galleri), <code>farge</code></li></ul></div>
-      <div class="tbl"><h3>oppgaver</h3><p>Felles for familien, arkiveres i stedet for å slettes.</p><ul><li><code>tittel</code>, <code>beskrivelse</code>, <code>ikon</code>, <code>belop_ore</code></li></ul></div>
-      <div class="tbl"><h3>utforelser</h3><p>Én rad per gang et barn gjør en oppgave.</p><ul><li><code>barn</code>, <code>oppgave</code>, <code>merknad</code> («stuen»)</li><li><code>belop_ore</code> låst ved avkrysning</li><li><code>status</code>: venter, godkjent, avvist</li><li><code>kommentar</code>, <code>behandlet_av</code></li><li><code>uke_start</code> (mandag)</li></ul></div>
-      <div class="tbl"><h3>utbetalinger</h3><p>«Marker som betalt», én per barn per uke.</p><ul><li><code>uke_start</code>, <code>belop_ore</code>, <code>utbetalt_av</code></li></ul></div>
-      <div class="tbl"><h3>sparemal · barn_merker</h3><p>Gamification. Stjerner og «dager på rad» regnes ut, de lagres ikke.</p><ul><li><code>tittel</code>, <code>mal_ore</code>, <code>nadd</code></li><li><code>merke</code>, <code>oppnadd</code></li></ul></div>
-      <div class="tbl"><h3>push_mottakere</h3><p>Enheter som skal få varsel når noe venter på godkjenning.</p><ul><li><code>expo_token</code>, <code>bruker</code></li></ul></div>
+      <div class="tbl"><h3>familier</h3><p>Én per husholdning. Alt under ligger i familien.</p><ul><li><code>navn</code>, <code>opprettetAv</code></li></ul></div>
+      <div class="tbl"><h3>voksne</h3><p>Én per innlogget voksen. Alle er likestilte.</p><ul><li><code>visningsnavn</code>, <code>bilde</code></li><li><code>pinSalt</code>, <code>pinHash</code></li></ul></div>
+      <div class="tbl"><h3>invitasjoner</h3><p>Engangslenke som utløper etter 2 timer. Sikkerhetsreglene sjekker tid og bruk.</p><ul><li><code>familieId</code>, <code>utloper</code>, <code>brukt</code></li></ul></div>
+      <div class="tbl"><h3>barn</h3><p>Profil uten egen innlogging.</p><ul><li><code>navn</code>, <code>bilde</code> (lite bilde fra galleri), <code>farge</code></li></ul></div>
+      <div class="tbl"><h3>oppgaver</h3><p>Felles for familien, arkiveres i stedet for å slettes.</p><ul><li><code>tittel</code>, <code>ikon</code>, <code>belopOre</code></li><li><code>forslag</code> («Stuen», «Rommet mitt»)</li></ul></div>
+      <div class="tbl"><h3>utforelser</h3><p>Én per gang et barn gjør en oppgave.</p><ul><li><code>barnId</code>, <code>oppgaveId</code>, <code>merknad</code></li><li><code>belopOre</code> låst ved avkrysning</li><li><code>status</code>: venter, godkjent, avvist</li><li><code>kommentar</code>, <code>behandletAv</code></li><li><code>ukeStart</code> (mandag)</li></ul></div>
+      <div class="tbl"><h3>uker</h3><p>Sum per barn per uke, og «Marker som betalt».</p><ul><li><code>tjentOre</code>, <code>antallGodkjent</code></li><li><code>utbetaltOre</code>, <code>utbetalt</code></li></ul></div>
+      <div class="tbl"><h3>push</h3><p>Enheter som skal få varsel når noe venter på godkjenning.</p><ul><li><code>token</code>, <code>uid</code></li></ul></div>
+      <div class="tbl"><h3>sparemål · merker</h3><p>Kommer i neste versjon. Stjerner og «dager på rad» regnes ut, de lagres ikke.</p></div>
     </div>
   </section>
 
   <section id="teknisk" class="prose">
     <h2>Teknisk</h2>
     <ul class="plain">
-      <li><b>Tilgang:</b> Hver voksen ser bare sin egen families data. Dette håndheves i databasen (Row Level Security), ikke bare i appen.</li>
-      <li><b>Godkjenning</b> skjer via en egen databasefunksjon, så status ikke kan endres fra barnevisningen.</li>
-      <li><b>Pushvarsel:</b> Når en avkrysning kommer inn, sender en Supabase-funksjon varsel til alle voksne i familien via Expo.</li>
-      <li><b>Offline:</b> Avkrysninger og godkjenninger legges i en kø på enheten med egen ID og sendes når nettet er tilbake. Samme ID to ganger lagres bare én gang.</li>
-      <li><b>Bilder</b> velges fra galleriet, skaleres ned på enheten og lagres i Supabase Storage.</li>
+      <li><b>Gratis:</b> Firebase på gratisplanen (Spark), med Authentication og Cloud Firestore. Ingen Cloud Functions eller Cloud Storage, som krever betalingsplan.</li>
+      <li><b>Tilgang:</b> Hver voksen ser bare sin egen families data. Dette håndheves av sikkerhetsreglene i Firestore, ikke bare i appen, og reglene har egne tester.</li>
+      <li><b>Pushvarsel:</b> Når barnets avkrysning er lagret, sender barnets enhet selv et varsel til de voksnes enheter via Expo.</li>
+      <li><b>Offline:</b> Avkrysninger og godkjenninger legges i en kø på enheten og sendes når nettet er tilbake. Hver sending sjekker status først, så ingenting telles dobbelt.</li>
+      <li><b>Bilder</b> velges fra galleriet, skaleres ned til 256 × 256 på enheten og lagres rett i databasen.</li>
       <li><b>Testing for familie og venner:</b> EAS Build til TestFlight på iOS og intern testing på Google Play. Krever Apple Developer-konto (99 USD i året) for TestFlight.</li>
     </ul>
   </section>
@@ -460,7 +460,7 @@ flowchart LR
   <section id="plan">
     <h2>Byggeplan etter godkjenning</h2>
     <div class="phases">
-      <div class="phase"><span class="tag">Steg 1</span><h3>Grunnmur</h3><ul><li>Supabase-prosjekt og skjema</li><li>Innlogging og opprett familie</li><li>Barn, voksne, PIN og profilvelger</li></ul></div>
+      <div class="phase"><span class="tag">Steg 1</span><h3>Grunnmur</h3><ul><li>Firebase-prosjekt og sikkerhetsregler</li><li>Innlogging og opprett familie</li><li>Barn, voksne, PIN og profilvelger</li></ul></div>
       <div class="phase"><span class="tag">Steg 2</span><h3>Kjernen</h3><ul><li>Oppgaver og beløp</li><li>Kryss av, godkjenn, avvis</li><li>Registrer for barn</li><li>Ukeoppgjør og historikk</li></ul></div>
       <div class="phase"><span class="tag">Steg 3</span><h3>Familien</h3><ul><li>Invitasjonslenke</li><li>Pushvarsler</li><li>Offline-kø</li></ul></div>
       <div class="phase"><span class="tag">Steg 4</span><h3>Moro og testing</h3><ul><li>Stjerner, sparemål, merker</li><li>iPad-tilpasning</li><li>TestFlight og intern testing</li></ul></div>

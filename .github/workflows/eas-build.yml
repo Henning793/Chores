@@ -1,0 +1,41 @@
+# Bygger appen med EAS. Startes manuelt: Actions → «Bygg app» → Run workflow.
+# Krever repo-secret EXPO_TOKEN (expo.dev → Account settings → Access tokens).
+name: Bygg app
+
+on:
+  workflow_dispatch:
+    inputs:
+      plattform:
+        description: Plattform
+        type: choice
+        options: [android, ios, all]
+        default: android
+      profil:
+        description: Byggprofil
+        type: choice
+        options: [preview, development, production]
+        default: preview
+
+jobs:
+  bygg:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - name: Koble til Expo-prosjektet
+        run: eas init --non-interactive --force
+
+      - name: Bygg
+        run: eas build --platform ${{ inputs.plattform }} --profile ${{ inputs.profil }} --non-interactive --no-wait

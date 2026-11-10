@@ -1,0 +1,80 @@
+rules_version = '2';
+
+// Sikkerhetsregler for Ukepenger.
+// Hovedregel: bare voksne i en familie kan lese og skrive familiens data.
+// Barn har ikke egne brukere; enheten er logget inn med en voksen sin konto.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function innlogget() {
+      return request.auth != null;
+    }
+
+    function voksenSti(familieId, uid) {
+      return /databases/$(database)/documents/familier/$(familieId)/voksne/$(uid);
+    }
+
+    function medlem(familieId) {
+      return innlogget() && exists(voksenSti(familieId, request.auth.uid));
+    }
+
+    function invitasjonSti(token) {
+      return /databases/$(database)/documents/invitasjoner/$(token);
+    }
+
+    // Hvilken familie brukeren tilhører. Kun eieren leser og skriver.
+    match /brukere/{uid} {
+      allow read, write: if innlogget() && request.auth.uid == uid;
+    }
+
+    // Invitasjonslenke. Dokument-ID-en er selve hemmeligheten (48 tegn), så den kan hentes
+    // av den som har lenken, men ikke listes.
+    match /invitasjoner/{token} {
+      allow get: if innlogget();
+      allow create: if medlem(request.resource.data.familieId)
+        && token.size() >= 32
+        && request.resource.data.opprettetAv == request.auth.uid
+        && request.resource.data.brukt == null
+        && request.resource.data.utloper is timestamp
+        && request.resource.data.utloper <= request.time + duration.value(2, 'h') + duration.value(1, 'm');
+      // Brukes én gang, før den utløper, samtidig som den nye voksne legges inn.
+      allow update: if innlogget()
+        && resource.data.brukt == null
+        && request.time < resource.data.utloper
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['brukt', 'bruktAv'])
+        && request.resource.data.bruktAv == request.auth.uid
+        && existsAfter(voksenSti(resource.data.familieId, request.auth.uid));
+    }
+
+    match /familier/{familieId} {
+      allow read: if medlem(familieId);
+      allow create: if innlogget() && request.resource.data.opprettetAv == request.auth.uid;
+      allow update: if medlem(familieId)
+        && request.resource.data.opprettetAv == resource.data.opprettetAv;
+
+      match /voksne/{uid} {
+        allow read: if medlem(familieId);
+        // Hver voksen endrer bare sin egen profil og PIN.
+        allow update: if innlogget() && request.auth.uid == uid && medlem(familieId);
+        // Bli voksen i familien: enten den som opprettet familien (i samme skriving),
+        // eller med en gyldig, ubrukt invitasjon som merkes som brukt i samme skriving.
+        allow create: if innlogget() && request.auth.uid == uid && (
+          getAfter(/databases/$(database)/documents/familier/$(familieId)).data.opprettetAv == uid
+          || (
+            request.resource.data.invitasjon is string
+            && get(invitasjonSti(request.resource.data.invitasjon)).data.familieId == familieId
+            && get(invitasjonSti(request.resource.data.invitasjon)).data.brukt == null
+            && request.time < get(invitasjonSti(request.resource.data.invitasjon)).data.utloper
+            && getAfter(invitasjonSti(request.resource.data.invitasjon)).data.bruktAv == uid
+          )
+        );
+      }
+
+      // Barn, oppgaver, avkrysninger, ukesummer og push-mottakere: alle voksne i familien.
+      match /{samling}/{dokument} {
+        allow read, write: if samling in ['barn', 'oppgaver', 'utforelser', 'uker', 'push'] && medlem(familieId);
+      }
+    }
+  }
+}

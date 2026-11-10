@@ -23,8 +23,14 @@
       "package": "no.ukepenger.app"
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "single",
+      "favicon": "./assets/images/favicon.png",
+      "name": "Ukepenger",
+      "shortName": "Ukepenger",
+      "lang": "nb",
+      "themeColor": "#2F5BEA",
+      "backgroundColor": "#F3F6FB",
+      "display": "standalone"
     },
     "plugins": [
       "expo-router",
@@ -35,11 +41,27 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Ukepenger trenger tilgang til bildene dine for å velge profilbilder.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "godkjenning"
+        }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": true,
+      "baseUrl": "/chores"
     }
   }
 }
