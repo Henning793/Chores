@@ -102,7 +102,7 @@ Appen bruker native moduler (bildevelger, varsler), så den må bygges med EAS f
 iPhone og iPad bruker appen fra nettleseren, så det trengs ingen Apple Developer-konto.
 
 1. Repoet → Settings → Pages → Source: **GitHub Actions** (én gang).
-2. Hver push til `main` bygger og publiserer appen til https://henning793.github.io/chores/ (workflow «Web-app»).
+2. Hver push til `main` bygger og publiserer appen til https://henning793.github.io/chores/ (workflow «Publiser web-app»).
 3. På iPhone/iPad: åpne adressen i Safari → Del → **Legg til på Hjem-skjerm**. Da åpnes den som en egen app uten adresselinje.
 
 Begrensning: ingen pushvarsler på iPhone/iPad. Avkrysninger vises i Godkjenn-fanen og med tall på fanen når en voksen åpner appen.
