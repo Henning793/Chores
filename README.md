@@ -68,12 +68,11 @@ familier/{familieId}                  { navn, opprettetAv }
    Slå også på **Google** hvis du vil ha Google-innlogging.
 3. **Build → Firestore Database → Create database:** velg region `eur3 (europe-west)` og start i
    **production mode**.
-4. **Prosjektinnstillinger → Generelt → Dine apper:** legg til en **web-app** (`</>`). Kopier verdiene fra
-   `firebaseConfig` til `.env` (se `.env.example`).
-5. Last opp sikkerhetsreglene:
+4. **Prosjektinnstillinger → Generelt → Dine apper:** legg til en **web-app** (`</>`). Verdiene fra
+   `firebaseConfig` ligger i `.env` (prosjektet `chores-55b3c` er allerede lagt inn).
+5. Last opp sikkerhetsreglene (prosjektet er satt i `.firebaserc`):
    ```bash
    npx firebase login
-   npx firebase use --add          # velg prosjektet
    npx firebase deploy --only firestore:rules
    ```
 6. **Google-innlogging (valgfritt):** i [Google Cloud Console](https://console.cloud.google.com) for samme prosjekt,
@@ -93,7 +92,6 @@ Varsler sendes til enheter der en voksen har åpnet profilen sin, men ikke til e
 
 ```bash
 npm install
-cp .env.example .env      # fyll inn Firebase-verdiene
 npx expo start
 ```
 
