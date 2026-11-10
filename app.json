@@ -61,7 +61,7 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true,
-      "baseUrl": "/chores"
+      "baseUrl": "/Chores"
     }
   }
 }
