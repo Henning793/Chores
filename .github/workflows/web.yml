@@ -1,5 +1,5 @@
 # Bygger web-versjonen (for iPhone og iPad) og publiserer den på GitHub Pages
-# hver gang main oppdateres. Adresse: https://henning793.github.io/chores/
+# hver gang main oppdateres. Adresse: https://henning793.github.io/Chores/
 name: Publiser web-app
 
 on:
