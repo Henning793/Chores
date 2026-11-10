@@ -1,7 +1,8 @@
 import * as Google from 'expo-auth-session/providers/google';
+import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
 import { useAuth } from '@/data/auth';
 import { feiltekst } from '@/lib/firebase';
@@ -46,8 +47,11 @@ export default function LoggInn() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Skjerm utenTopp={false} stil={{ justifyContent: 'center', flexGrow: 1, maxWidth: 440 }}>
         <View style={{ alignItems: 'center', gap: avstand.s, marginBottom: avstand.xl }}>
-          <Text style={{ fontSize: 56 }}>🪙</Text>
-          <T v="visning">Ukepenger</T>
+          <Image
+            source={require('../../assets/images/icon.png')}
+            style={{ width: 132, height: 132, borderRadius: 30 }}
+            accessibilityLabel="Optera"
+          />
           <T dempet>For hele familien</T>
         </View>
 
