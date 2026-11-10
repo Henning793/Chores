@@ -158,7 +158,7 @@ function Invitasjon() {
         tittel="Del via SMS, e-post …"
         onPress={() =>
           Share.share({
-            message: `Bli med i familien vår i Ukepenger-appen. Åpne lenken på telefonen der appen er installert (gyldig i 2 timer): ${lenke}`,
+            message: `Bli med i familien vår i Optera-appen. Åpne lenken på telefonen der appen er installert (gyldig i 2 timer): ${lenke}`,
           })
         }
       />

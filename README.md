@@ -1,4 +1,6 @@
-# Ukepenger
+# Optera
+
+(Tidligere kalt Ukepenger. Navnet er byttet bare i det brukerne ser; pakkenavn, Expo-prosjekt og Firebase heter fortsatt ukepenger.)
 
 App for familier der barn krysser av oppgaver de har gjort hjemme, voksne godkjenner,
 og godkjente oppgaver blir til ukepenger (mandag til søndag). iPhone, Android og iPad.
