@@ -1,9 +1,9 @@
-# Design (v1, til godkjenning)
+# Design (v1, godkjent 10. nov 2026)
 
 Fullt designforslag med skjermflyt, skisser og datamodell: [design.html](design.html)
 (også publisert som side: https://claude.ai/artifact/12aL3pNuL4SiDcHGe8D8Bx).
 
-## Foreslåtte standarder (venter på godkjenning)
+## Valgte standarder (godkjent)
 
 1. **Utbetaling:** «Marker som betalt» per barn per uke i Ukeoppgjør. Ingen løpende saldo.
 2. **iPad:** Barneprofiler er åpne. Valgfri innstilling «Lås enheten til ett barn» krever voksen-PIN for å bytte.
