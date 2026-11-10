@@ -5,7 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import { doc, increment, runTransaction } from 'firebase/firestore';
+import { doc, increment, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
@@ -74,6 +74,9 @@ export function vedKryssSendt(fn: ((jobb: Jobb) => void) | null) {
 
 const utfRef = (familieId: string, id: string) => doc(db, 'familier', familieId, 'utforelser', id);
 const ukeRef = (familieId: string, barnId: string, uke: string) => doc(db, 'familier', familieId, 'uker', `${barnId}_${uke}`);
+/** Pausen mellom avkrysninger. Reglene krever at denne skrives sammen med hver avkrysning. */
+const sperreRef = (familieId: string, barnId: string, oppgaveId: string) =>
+  doc(db, 'familier', familieId, 'sperrer', `${barnId}_${oppgaveId}`);
 
 /** Utfører én jobb. Gir true hvis noe faktisk ble endret. */
 async function utfor(j: Jobb): Promise<boolean> {
@@ -91,6 +94,12 @@ async function utfor(j: Jobb): Promise<boolean> {
           behandletAv: null,
           behandlet: null,
           kommentar: null,
+        });
+        tx.set(sperreRef(f, j.rad.barnId, j.rad.oppgaveId), {
+          barnId: j.rad.barnId,
+          oppgaveId: j.rad.oppgaveId,
+          utforelseId: j.rad.id,
+          sist: serverTimestamp(),
         });
         return true;
       });
@@ -144,7 +153,12 @@ async function utfor(j: Jobb): Promise<boolean> {
         const ref = utfRef(f, j.utforelseId);
         const snap = await tx.get(ref);
         if (!snap.exists() || snap.data().status !== 'venter') return false;
+        const u = snap.data();
+        // Angrer barnet, oppheves pausen også.
+        const sperre = sperreRef(f, u.barnId, u.oppgaveId);
+        const s = await tx.get(sperre);
         tx.delete(ref);
+        if (s.exists() && s.data().utforelseId === j.utforelseId) tx.delete(sperre);
         return true;
       });
   }

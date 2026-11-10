@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { after, before, beforeEach, test } from 'node:test';
 
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, Timestamp, updateDoc, writeBatch } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc, writeBatch } from 'firebase/firestore';
 
 let env;
 const F = 'fam1';
@@ -116,4 +116,83 @@ test('en voksen kan ikke endre en annen voksens PIN', async () => {
   await bliMed('mamma');
   await assertFails(updateDoc(doc(som('mamma'), 'familier', F, 'voksne', 'pappa'), { pinHash: 'x' }));
   await assertSucceeds(updateDoc(doc(som('mamma'), 'familier', F, 'voksne', 'mamma'), { pinHash: 'x' }));
+});
+
+// --- Pause mellom avkrysninger ---
+
+function kryss(id, { barnId = 'b1', oppgaveId = 'o1', utenSperre = false } = {}) {
+  const db = som('pappa');
+  const b = writeBatch(db);
+  b.set(doc(db, 'familier', F, 'utforelser', id), { barnId, oppgaveId, status: 'venter', belopOre: 2000 });
+  if (!utenSperre) {
+    b.set(doc(db, 'familier', F, 'sperrer', `${barnId}_${oppgaveId}`), { barnId, oppgaveId, utforelseId: id, sist: serverTimestamp() });
+  }
+  return b.commit();
+}
+
+async function medOppgave(pauseMin) {
+  await opprettFamilie();
+  await env.withSecurityRulesDisabled((ctx) =>
+    setDoc(doc(ctx.firestore(), 'familier', F, 'oppgaver', 'o1'), { tittel: 'Støvsuget', belopOre: 2000, ...(pauseMin == null ? {} : { pauseMin }) }),
+  );
+}
+
+async function settSistKryss(minSiden, utforelseId = 'gammel') {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'familier', F, 'utforelser', utforelseId), { barnId: 'b1', oppgaveId: 'o1', status: 'venter' });
+    await setDoc(doc(db, 'familier', F, 'sperrer', 'b1_o1'), {
+      barnId: 'b1',
+      oppgaveId: 'o1',
+      utforelseId,
+      sist: Timestamp.fromMillis(Date.now() - minSiden * 60000),
+    });
+  });
+}
+
+test('avkrysning uten å oppdatere pausen avvises', async () => {
+  await medOppgave();
+  await assertFails(kryss('u1', { utenSperre: true }));
+  await assertSucceeds(kryss('u1'));
+});
+
+test('samme oppgave kan ikke krysses av igjen før 5 minutter har gått', async () => {
+  await medOppgave();
+  await assertSucceeds(kryss('u1'));
+  await assertFails(kryss('u2'));
+  await assertSucceeds(kryss('u3', { barnId: 'b2' })); // et annet barn er ikke sperret
+});
+
+test('etter pausen går det fint, og pausen kan justeres per oppgave', async () => {
+  await medOppgave();
+  await settSistKryss(6);
+  await assertSucceeds(kryss('u1'));
+
+  await env.clearFirestore();
+  await medOppgave(30);
+  await settSistKryss(10);
+  await assertFails(kryss('u1'));
+
+  await env.clearFirestore();
+  await medOppgave(0);
+  await assertSucceeds(kryss('u1'));
+  await assertSucceeds(kryss('u2'));
+});
+
+test('pausen kan bare fjernes når avkrysningen er angret', async () => {
+  await medOppgave();
+  await assertSucceeds(kryss('u1'));
+  await assertFails(deleteDoc(doc(som('pappa'), 'familier', F, 'sperrer', 'b1_o1')));
+  const db = som('pappa');
+  const b = writeBatch(db);
+  b.delete(doc(db, 'familier', F, 'utforelser', 'u1'));
+  b.delete(doc(db, 'familier', F, 'sperrer', 'b1_o1'));
+  await assertSucceeds(b.commit());
+  await assertSucceeds(kryss('u2'));
+});
+
+test('en voksen kan registrere direkte uten pause', async () => {
+  await medOppgave();
+  await assertSucceeds(kryss('u1'));
+  await assertSucceeds(setDoc(doc(som('pappa'), 'familier', F, 'utforelser', 'r1'), { barnId: 'b1', oppgaveId: 'o1', status: 'godkjent' }));
 });

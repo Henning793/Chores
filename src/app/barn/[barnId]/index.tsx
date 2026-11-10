@@ -5,6 +5,8 @@ import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, Vie
 import { useOppgaver } from '@/data/familie';
 import type { Oppgave, Utforelse } from '@/data/typer';
 import { useUtforelseHandlinger, useUtforelser } from '@/data/utforelser';
+import { STANDARD_IKON } from '@/lib/ikoner';
+import { nedtelling, pauseIgjen, pauseMin, useNaa } from '@/lib/pause';
 import { kr } from '@/lib/penger';
 import { dagerPaRad } from '@/lib/stjerner';
 import { dagFor, naarTekst, ukeStart, ukenummer } from '@/lib/uke';
@@ -19,10 +21,12 @@ export default function BarnHjem() {
   const { kryssAv, angre } = useUtforelseHandlinger();
   const [valgt, setValgt] = useState<{ oppgave: Oppgave; nyttForsokAv: string | null } | null>(null);
   const [bekreftelse, setBekreftelse] = useState<string | null>(null);
+  const mine = utforelser.data.filter((u) => u.barnId === barnId);
+  // Oppdateres hvert sekund, så nedtellingen går og oppgaven låses opp av seg selv.
+  const naa = useNaa(true);
 
   if (oppgaver.isPending) return <Laster />;
 
-  const mine = utforelser.data.filter((u) => u.barnId === barnId);
   const uke = ukeStart();
   const denneUka = mine.filter((u) => u.ukeStart === uke);
   const tjent = denneUka.filter((u) => u.status === 'godkjent').reduce((s, u) => s + u.belopOre, 0);
@@ -60,23 +64,16 @@ export default function BarnHjem() {
 
         <Seksjon>Hva har du gjort?</Seksjon>
         {oppgaver.data?.length ? (
-          oppgaver.data.map((o) => (
-            <Rad key={o.id} onPress={() => setValgt({ oppgave: o, nyttForsokAv: null })}>
-              <Text style={{ fontSize: 28 }}>{o.ikon || '⭐'}</Text>
-              <View style={{ flex: 1 }}>
-                <T fet>{o.tittel}</T>
-                {o.beskrivelse ? (
-                  <T dempet v="liten">
-                    {o.beskrivelse}
-                  </T>
-                ) : null}
-              </View>
-              <Mynt ore={o.belopOre} />
-              <View style={[styles.pluss, { borderColor: f.merke }]}>
-                <Text style={{ color: f.merke, fontSize: 22, fontWeight: '800' }}>+</Text>
-              </View>
-            </Rad>
-          ))
+          <View style={styles.rutenett}>
+            {oppgaver.data.map((o) => (
+              <OppgaveRute
+                key={o.id}
+                oppgave={o}
+                pauseMs={pauseIgjen(o, barnId, mine, naa)}
+                onPress={() => setValgt({ oppgave: o, nyttForsokAv: null })}
+              />
+            ))}
+          </View>
         ) : (
           <Tom ikon="📝" tittel="Ingen oppgaver ennå" tekst="Be en voksen legge inn oppgaver." />
         )}
@@ -86,7 +83,12 @@ export default function BarnHjem() {
           <UtforelseRad
             key={u.id}
             u={u}
+            ikon={oppgaveFor(u.oppgaveId)?.ikon || STANDARD_IKON}
             tittel={oppgaveFor(u.oppgaveId)?.tittel ?? 'Oppgave'}
+            pauseMs={(() => {
+              const o = oppgaveFor(u.oppgaveId);
+              return o ? pauseIgjen(o, barnId, mine, naa) : 0;
+            })()}
             onProvIgjen={() => {
               const o = oppgaveFor(u.oppgaveId);
               if (o) setValgt({ oppgave: o, nyttForsokAv: u.id });
@@ -111,19 +113,57 @@ export default function BarnHjem() {
   );
 }
 
+function OppgaveRute({ oppgave: o, pauseMs, onPress }: { oppgave: Oppgave; pauseMs: number; onPress: () => void }) {
+  const f = useFarger();
+  const pauset = pauseMs > 0;
+  const andel = pauset ? pauseMs / (pauseMin(o) * 60_000) : 0;
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={pauset}
+      accessibilityRole="button"
+      accessibilityLabel={pauset ? `${o.tittel}, pause i ${nedtelling(pauseMs)}` : `${o.tittel}, ${kr(o.belopOre)}`}
+      accessibilityState={{ disabled: pauset }}
+      style={({ pressed }) => [
+        styles.rute,
+        { backgroundColor: f.flate, borderColor: pauset ? f.linje : f.merkeMyk, opacity: pressed ? 0.7 : 1 },
+      ]}>
+      <Text style={[styles.ruteIkon, pauset && { opacity: 0.3 }]}>{o.ikon || STANDARD_IKON}</Text>
+      <T fet v="liten" sentrert stil={pauset ? { opacity: 0.5 } : undefined}>
+        {o.tittel}
+      </T>
+      {pauset ? (
+        <View style={styles.pauseBoks}>
+          <Text style={[styles.pauseTid, { color: f.vent }]}>⏳ {nedtelling(pauseMs)}</Text>
+          <View style={[styles.pauseSpor, { backgroundColor: f.ventMyk }]}>
+            <View style={[styles.pauseFyll, { backgroundColor: f.vent, width: `${Math.round(andel * 100)}%` }]} />
+          </View>
+        </View>
+      ) : (
+        <Mynt ore={o.belopOre} />
+      )}
+    </Pressable>
+  );
+}
+
 function UtforelseRad({
   u,
+  ikon,
   tittel,
+  pauseMs,
   onProvIgjen,
   onAngre,
 }: {
   u: Utforelse;
+  ikon: string;
   tittel: string;
+  pauseMs: number;
   onProvIgjen: () => void;
   onAngre: () => void;
 }) {
   return (
     <Rad>
+      <Text style={{ fontSize: 34 }}>{ikon}</Text>
       <View style={{ flex: 1, gap: 2 }}>
         <T fet>
           {tittel}
@@ -147,7 +187,13 @@ function UtforelseRad({
       ) : u.status === 'godkjent' ? (
         <Pille tekst={`+${kr(u.belopOre)}`} type="godkjent" />
       ) : (
-        <Knapp tittel="Prøv igjen" variant="nei" liten onPress={onProvIgjen} />
+        <Knapp
+          tittel={pauseMs > 0 ? `⏳ ${nedtelling(pauseMs)}` : 'Prøv igjen'}
+          variant="nei"
+          liten
+          deaktivert={pauseMs > 0}
+          onPress={onProvIgjen}
+        />
       )}
     </Rad>
   );
@@ -171,9 +217,10 @@ function KryssAvArk({
       <Pressable style={styles.dimme} onPress={onLukk} accessibilityLabel="Lukk" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={[styles.ark, { backgroundColor: f.flate }]}>
-          <T v="tittel">
-            {o?.ikon || '⭐'} {o?.tittel}
-          </T>
+          <View style={{ alignItems: 'center', gap: avstand.xs }}>
+            <Text style={{ fontSize: 72 }}>{o?.ikon || STANDARD_IKON}</Text>
+            <T v="tittel">{o?.tittel}</T>
+          </View>
           {o?.forslag?.length ? (
             <>
               <T dempet>Hvor? (valgfritt)</T>
@@ -200,6 +247,23 @@ const styles = StyleSheet.create({
   heroLiten: { fontSize: 14, fontWeight: '600', opacity: 0.9 },
   heroStor: { fontSize: 40, fontWeight: '800', fontVariant: ['tabular-nums'] },
   bekreft: { borderRadius: radius.s, padding: avstand.m },
+  rutenett: { flexDirection: 'row', flexWrap: 'wrap', gap: avstand.m },
+  rute: {
+    flexBasis: '30%',
+    flexGrow: 1,
+    minWidth: 100,
+    maxWidth: 220,
+    borderRadius: radius.l,
+    borderWidth: 2,
+    padding: avstand.m,
+    alignItems: 'center',
+    gap: avstand.s,
+  },
+  ruteIkon: { fontSize: 56, lineHeight: 68 },
+  pauseBoks: { alignSelf: 'stretch', alignItems: 'center', gap: 4 },
+  pauseTid: { fontWeight: '800', fontVariant: ['tabular-nums'] },
+  pauseSpor: { alignSelf: 'stretch', height: 8, borderRadius: 4, overflow: 'hidden' },
+  pauseFyll: { height: 8, borderRadius: 4 },
   pluss: { width: 40, height: 40, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   dimme: { flex: 1, backgroundColor: 'rgba(10,16,30,0.45)' },
   ark: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: avstand.xl, gap: avstand.m, paddingBottom: 40 },

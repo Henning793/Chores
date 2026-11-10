@@ -3,12 +3,13 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 
 import { useArkiverOppgave, useLagreOppgave, useOppgaver } from '@/data/familie';
 import type { Oppgave } from '@/data/typer';
+import { IKONGRUPPER, STANDARD_IKON } from '@/lib/ikoner';
+import { PAUSEVALG, pauseMin } from '@/lib/pause';
 import { kr, tilOre } from '@/lib/penger';
 import { feiltekst } from '@/lib/firebase';
 import { Chip, Chips, Felt, Feilmelding, Knapp, Laster, Mynt, Rad, Skjerm, T, Tom } from '@/ui/komponenter';
-import { avstand, useFarger } from '@/ui/tema';
+import { avstand, radius, useFarger } from '@/ui/tema';
 
-const IKONER = ['🧹', '🍽️', '🐕', '🗑️', '🛏️', '👕', '🧺', '🪴', '📚', '🚗', '🧽', '⭐'];
 
 export default function Oppgaver() {
   const oppgaver = useOppgaver();
@@ -19,22 +20,16 @@ export default function Oppgaver() {
   return (
     <>
       <Skjerm>
-        <Knapp tittel="+ Ny oppgave" onPress={() => setRedigerer({ ikon: '⭐', forslag: [] })} />
+        <Knapp tittel="+ Ny oppgave" onPress={() => setRedigerer({ ikon: STANDARD_IKON, forslag: [] })} />
         {oppgaver.data?.length ? (
           oppgaver.data.map((o) => (
             <Rad key={o.id} onPress={() => setRedigerer(o)}>
-              <Text style={{ fontSize: 26 }}>{o.ikon || '⭐'}</Text>
+              <Text style={{ fontSize: 34 }}>{o.ikon || STANDARD_IKON}</Text>
               <View style={{ flex: 1 }}>
                 <T fet>{o.tittel}</T>
-                {o.forslag.length ? (
-                  <T dempet v="liten">
-                    {o.forslag.join(', ')}
-                  </T>
-                ) : o.beskrivelse ? (
-                  <T dempet v="liten">
-                    {o.beskrivelse}
-                  </T>
-                ) : null}
+                <T dempet v="liten">
+                  {[pauseMin(o) > 0 ? `Pause ${PAUSEVALG.find((p) => p.min === pauseMin(o))?.tekst ?? `${pauseMin(o)} min`}` : 'Ingen pause', ...o.forslag].join(' · ')}
+                </T>
               </View>
               <Mynt ore={o.belopOre} />
             </Rad>
@@ -58,7 +53,8 @@ function OppgaveSkjema({ start, onLukk }: { start: Partial<Oppgave>; onLukk: () 
   const arkiver = useArkiverOppgave();
   const [tittel, setTittel] = useState(start.tittel ?? '');
   const [belop, setBelop] = useState(start.belopOre != null ? String(start.belopOre / 100).replace('.', ',') : '');
-  const [ikon, setIkon] = useState(start.ikon ?? '⭐');
+  const [ikon, setIkon] = useState(start.ikon ?? STANDARD_IKON);
+  const [pause, setPause] = useState(pauseMin(start));
   const [beskrivelse, setBeskrivelse] = useState(start.beskrivelse ?? '');
   const [forslag, setForslag] = useState((start.forslag ?? []).join(', '));
   const ore = tilOre(belop);
@@ -71,6 +67,7 @@ function OppgaveSkjema({ start, onLukk }: { start: Partial<Oppgave>; onLukk: () 
       tittel: tittel.trim(),
       belopOre: ore,
       ikon,
+      pauseMin: pause,
       beskrivelse: beskrivelse.trim() || null,
       forslag: forslag
         .split(',')
@@ -105,12 +102,42 @@ function OppgaveSkjema({ start, onLukk }: { start: Partial<Oppgave>; onLukk: () 
             Nytt beløp gjelder fra nå. Tidligere avkrysninger beholder {kr(start.belopOre)}.
           </T>
         ) : null}
+        <View style={styles.ikonValgt}>
+          <View style={[styles.ikonStor, { backgroundColor: f.merkeMyk }]}>
+            <Text style={{ fontSize: 56 }}>{ikon}</Text>
+          </View>
+          <T dempet v="liten" stil={{ flex: 1 }}>
+            Velg et bilde barna kjenner igjen uten å kunne lese. Det vises stort på barnas skjerm.
+          </T>
+        </View>
+        {IKONGRUPPER.map((g) => (
+          <View key={g.navn} style={{ gap: avstand.xs }}>
+            <T v="liten" dempet fet>
+              {g.navn}
+            </T>
+            <View style={styles.ikonRutenett}>
+              {g.ikoner.map((i) => (
+                <Pressable
+                  key={i}
+                  onPress={() => setIkon(i)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: ikon === i }}
+                  style={[
+                    styles.ikonRute,
+                    { borderColor: ikon === i ? f.merke : f.linje, backgroundColor: ikon === i ? f.merkeMyk : f.flate },
+                  ]}>
+                  <Text style={{ fontSize: 28 }}>{i}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        ))}
         <T v="liten" dempet fet>
-          Ikon
+          Pause før samme barn kan krysse av igjen
         </T>
         <Chips>
-          {IKONER.map((i) => (
-            <Chip key={i} tekst={i} valgt={ikon === i} onPress={() => setIkon(i)} />
+          {PAUSEVALG.map((p) => (
+            <Chip key={p.min} tekst={p.tekst} valgt={pause === p.min} onPress={() => setPause(p.min)} />
           ))}
         </Chips>
         <Felt
@@ -150,5 +177,9 @@ function OppgaveSkjema({ start, onLukk }: { start: Partial<Oppgave>; onLukk: () 
 
 const styles = StyleSheet.create({
   skjema: { padding: avstand.l, gap: avstand.m, paddingBottom: 60, width: '100%', maxWidth: 600, alignSelf: 'center' },
+  ikonValgt: { flexDirection: 'row', alignItems: 'center', gap: avstand.m },
+  ikonStor: { width: 88, height: 88, borderRadius: radius.l, alignItems: 'center', justifyContent: 'center' },
+  ikonRutenett: { flexDirection: 'row', flexWrap: 'wrap', gap: avstand.s },
+  ikonRute: { width: 48, height: 48, borderRadius: radius.s, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   topp: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: avstand.s },
 });

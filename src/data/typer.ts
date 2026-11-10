@@ -28,6 +28,8 @@ export type Oppgave = {
   ikon: string | null;
   belopOre: number;
   forslag: string[];
+  /** Minutter før samme barn kan krysse av oppgaven igjen. Mangler = 5. */
+  pauseMin?: number;
   rekkefolge: number;
   arkivert: string | null;
 };

@@ -83,6 +83,16 @@ figcaption b { color: var(--ink); display: block; font-family: var(--f-display);
 .btn.ghost { background: transparent; color: var(--brand); border: 1.5px solid var(--brand); }
 .btn.ok { background: var(--ok); } .btn.no { background: var(--no-soft); color: var(--no); }
 .field { border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 10px; color: var(--muted); }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.tile { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 4px; border: 2px solid var(--brand-soft); border-radius: 12px; background: var(--surface); }
+.tile .ic { font-size: 26px; line-height: 1.1; }
+.tile b { font-size: 10.5px; }
+.tile .coin { font-size: 10px; }
+.tile.off { border-color: var(--line); }
+.tile.off .ic, .tile.off b { opacity: .35; }
+.tile .cd { color: var(--wait); font-weight: 800; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.bar2 { align-self: stretch; height: 5px; border-radius: 3px; background: var(--wait-soft); overflow: hidden; }
+.bar2 i { display: block; height: 100%; background: var(--wait); }
 .row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; }
 .row .t { flex: 1; min-width: 0; }
 .row .t b { display: block; font-size: 13px; }
@@ -136,7 +146,7 @@ ul.plain { padding-left: 20px; } ul.plain li { margin-bottom: 6px; }
 
 <div class="wrap">
   <header class="prose">
-    <div class="eyebrow">Design v1 · godkjent 10. november 2026 · oppdatert for Firebase</div>
+    <div class="eyebrow">Design v1 · godkjent 10. november 2026 · oppdatert for Firebase, bildefliser og pause</div>
     <h1>Ukepenger</h1>
     <p class="lead">Barna krysser av det de har gjort hjemme, en voksen godkjenner, og alt som er godkjent fra mandag til søndag blir ukens ukepenger. Én app for iPhone, Android og iPad, med Firebase i bakkant på gratisplanen.</p>
     <div class="status">Godkjent. Første versjon er under bygging.</div>
@@ -277,16 +287,18 @@ flowchart LR
           <div class="body">
             <div class="hero"><small>Uke 46 · tjent så langt</small><div class="big">85 kr</div><small><span class="stars">★★★★★</span> 12 stjerner · 🔥 4 dager på rad</small></div>
             <div class="sect">Hva har du gjort?</div>
-            <div class="row"><span>🧹</span><div class="t"><b>Ryddet</b><span>Stue, rommet ditt …</span></div><span class="coin">20 kr</span><span class="chk">+</span></div>
-            <div class="row"><span>🍽️</span><div class="t"><b>Tømt oppvaskmaskin</b></div><span class="coin">15 kr</span><span class="chk">+</span></div>
-            <div class="row"><span>🐕</span><div class="t"><b>Gått tur med hunden</b></div><span class="coin">25 kr</span><span class="chk">+</span></div>
+            <div class="tiles">
+              <div class="tile"><span class="ic">🧹</span><b>Ryddet</b><span class="coin">20 kr</span></div>
+              <div class="tile off"><span class="ic">🍽️</span><b>Oppvask</b><span class="cd">⏳ 3:12</span><span class="bar2"><i style="width:64%"></i></span></div>
+              <div class="tile"><span class="ic">🐕</span><b>Hunden</b><span class="coin">25 kr</span></div>
+            </div>
             <div class="sect">I dag</div>
-            <div class="row"><div class="t"><b>Ryddet · stuen</b><span>08:12</span></div><span class="pill p-wait">Venter</span></div>
-            <div class="row"><div class="t"><b>Ryddet · rommet</b><span>07:40 · «Glemte sengen»</span></div><span class="pill p-no">Prøv igjen</span></div>
+            <div class="row"><span>🧹</span><div class="t"><b>Ryddet · stuen</b><span>08:12</span></div><span class="pill p-wait">Venter</span></div>
+            <div class="row"><span>🧹</span><div class="t"><b>Ryddet · rommet</b><span>07:40 · «Glemte sengen»</span></div><span class="pill p-no">Prøv igjen</span></div>
           </div>
           <div class="tabs"><span class="on">Oppgaver</span><span>Mine uker</span><span>Sparemål</span></div>
         </div></div>
-        <figcaption><b>Barn: Mine oppgaver</b>Store knapper som kan trykkes mange ganger per dag. Avviste oppgaver viser kommentaren og kan prøves på nytt.</figcaption>
+        <figcaption><b>Barn: Mine oppgaver</b>Store bildefliser, så barn som ikke kan lese kjenner igjen oppgaven på bildet. Etter en avkrysning er flisen grå med timeglass og en stolpe som krymper til pausen er over (standard 5 min, kan endres per oppgave). Avviste oppgaver viser kommentaren og kan prøves på nytt.</figcaption>
       </figure>
 
       <figure>
