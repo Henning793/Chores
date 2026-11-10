@@ -37,7 +37,8 @@ src/
     index.tsx             «Hvem bruker appen?» (profilvelger)
     pin.tsx               PIN for voksenprofil
     barn/[barnId]/        Barnets visning: oppgaver og mine uker
-    voksen/               Godkjenn, registrer, ukeoppgjør, oppgaver, mer (barn, voksne, invitasjon, PIN, lås)
+    voksen/               To rom: Barna (Godkjenn · Oppgaver · Uker, «＋ Fullført oppgave»), Gjøremål (felles liste for voksne) og Mer
+  skjermer/               Innholdet i Barna-fanen og skjemaene den åpner
   data/                   Firestore-lesing og -skriving, innlogging, profiler, offline-kø, varsler, bilder
   lib/                    Firebase-oppsett, kroner/øre, uker i norsk tid, PIN
   ui/                     Felles komponenter og farger
@@ -106,7 +107,7 @@ iPhone og iPad bruker appen fra nettleseren, så det trengs ingen Apple Develope
 2. Hver push til `main` bygger og publiserer appen til https://henning793.github.io/Chores/ (workflow «Publiser web-app»).
 3. På iPhone/iPad: åpne adressen i Safari → Del → **Legg til på Hjem-skjerm**. Da åpnes den som en egen app uten adresselinje.
 
-Begrensning: ingen pushvarsler på iPhone/iPad. Avkrysninger vises i Godkjenn-fanen og med tall på fanen når en voksen åpner appen.
+Begrensning: ingen pushvarsler på iPhone/iPad. Avkrysninger vises under Barna → Godkjenn og med tall på fanen når en voksen åpner appen. Varsel før fristen på Gjøremål planlegges lokalt på hver Android-telefon (kl. 09 dagen før, eller én time før når klokkeslett er satt).
 Test lokalt med `npx expo start --web`.
 
 ## Bygge appen (EAS)

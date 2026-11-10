@@ -262,6 +262,41 @@ export function Chips({ children }: { children: ReactNode }) {
   return <View style={styles.chips}>{children}</View>;
 }
 
+/** Bryter med 2–4 valg, for eksempel Godkjenn · Oppgaver · Uker. */
+export function Bryter<T extends string>({
+  valg,
+  verdi,
+  onEndre,
+}: {
+  valg: { verdi: T; tekst: string; antall?: number }[];
+  verdi: T;
+  onEndre: (v: T) => void;
+}) {
+  const f = useFarger();
+  return (
+    <View style={[styles.bryter, { backgroundColor: f.linje }]} accessibilityRole="tablist">
+      {valg.map((v) => {
+        const valgt = v.verdi === verdi;
+        return (
+          <Pressable
+            key={v.verdi}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: valgt }}
+            onPress={() => onEndre(v.verdi)}
+            style={[styles.bryterValg, valgt && { backgroundColor: f.flate, ...styles.bryterSkygge }]}>
+            <Text style={{ fontWeight: '800', fontSize: 14, color: valgt ? f.tekst : f.dempet }}>{v.tekst}</Text>
+            {v.antall ? (
+              <View style={[styles.bryterTall, { backgroundColor: f.nei }]}>
+                <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 11 }}>{v.antall}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Visning
 // ---------------------------------------------------------------------------
@@ -381,6 +416,10 @@ const styles = StyleSheet.create({
   chip: { borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: avstand.s },
   pille: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
+  bryter: { flexDirection: 'row', borderRadius: radius.s + 2, padding: 3, gap: 2 },
+  bryterValg: { flex: 1, flexDirection: 'row', gap: 6, alignItems: 'center', justifyContent: 'center', paddingVertical: 9, borderRadius: radius.s },
+  bryterSkygge: { shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 3, shadowOffset: { width: 0, height: 1 }, elevation: 1 },
+  bryterTall: { minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
   prikk: { width: 18, height: 18, borderRadius: 9, borderWidth: 2 },
   tastatur: { flexDirection: 'row', flexWrap: 'wrap', width: 280, gap: 14, justifyContent: 'center' },
   tast: { width: 80, height: 64, borderRadius: radius.m, alignItems: 'center', justifyContent: 'center' },

@@ -196,3 +196,85 @@ test('en voksen kan registrere direkte uten pause', async () => {
   await assertSucceeds(kryss('u1'));
   await assertSucceeds(setDoc(doc(som('pappa'), 'familier', F, 'utforelser', 'r1'), { barnId: 'b1', oppgaveId: 'o1', status: 'godkjent' }));
 });
+
+// ---------------------------------------------------------------------------
+// Gjøremål
+// ---------------------------------------------------------------------------
+
+const gjoremal = (over = {}) => ({
+  tittel: 'Bytte til vinterdekk',
+  beskrivelse: null,
+  frist: '2026-11-14',
+  fristKl: null,
+  gjentas: null,
+  fullfort: null,
+  fullfortAv: null,
+  opprettet: '2026-11-10T17:00:00.000Z',
+  opprettetAv: 'pappa',
+  nesteId: null,
+  ...over,
+});
+const gRef = (db, id) => doc(db, 'familier', F, 'gjoremal', id);
+
+test('voksne i familien kan lage, lese og slette gjøremål', async () => {
+  await opprettFamilie();
+  await assertSucceeds(setDoc(gRef(som('pappa'), 'g1'), gjoremal()));
+  await assertSucceeds(getDoc(gRef(som('pappa'), 'g1')));
+  await assertSucceeds(deleteDoc(gRef(som('pappa'), 'g1')));
+});
+
+test('utenforstående kommer ikke til gjøremålene', async () => {
+  await opprettFamilie();
+  await setDoc(gRef(som('pappa'), 'g1'), gjoremal());
+  await assertFails(getDoc(gRef(som('fremmed'), 'g1')));
+  await assertFails(setDoc(gRef(som('fremmed'), 'g2'), gjoremal({ opprettetAv: 'fremmed' })));
+  await assertFails(deleteDoc(gRef(som('fremmed'), 'g1')));
+});
+
+test('gjøremål må ha gyldige felt', async () => {
+  await opprettFamilie();
+  const db = som('pappa');
+  await assertFails(setDoc(gRef(db, 'a'), gjoremal({ tittel: '  ' })));
+  await assertFails(setDoc(gRef(db, 'b'), gjoremal({ frist: '14.11.2026' })));
+  await assertFails(setDoc(gRef(db, 'c'), gjoremal({ gjentas: 'time' })));
+  await assertFails(setDoc(gRef(db, 'd'), gjoremal({ opprettetAv: 'mamma' })));
+  await assertFails(setDoc(gRef(db, 'e'), gjoremal({ bilde: 'x' })));
+  await assertFails(setDoc(gRef(db, 'f'), gjoremal({ frist: null, fristKl: '14:00' })));
+  await assertSucceeds(setDoc(gRef(db, 'g'), gjoremal({ fristKl: '14:00', gjentas: 'maned', beskrivelse: 'Verkstedet' })));
+});
+
+test('den som krysser av, står som den som fullførte', async () => {
+  await opprettFamilie();
+  await setDoc(gRef(som('pappa'), 'g1'), gjoremal());
+  await assertFails(updateDoc(gRef(som('pappa'), 'g1'), { fullfort: '2026-11-11T08:00:00Z', fullfortAv: 'mamma' }));
+  await assertSucceeds(updateDoc(gRef(som('pappa'), 'g1'), { fullfort: '2026-11-11T08:00:00Z', fullfortAv: 'pappa' }));
+});
+
+function fullforMedKopi(uid, kopiId) {
+  const db = som(uid);
+  const b = writeBatch(db);
+  b.set(gRef(db, kopiId), gjoremal({ frist: '2026-12-14', gjentas: 'maned', opprettetAv: uid }));
+  b.update(gRef(db, 'g1'), { fullfort: '2026-11-11T08:00:00Z', fullfortAv: uid, nesteId: kopiId });
+  return b.commit();
+}
+
+test('gjentakende gjøremål får bare én ny kopi, selv om to krysser av', async () => {
+  await opprettFamilie();
+  await lagInvitasjon();
+  await bliMed('mamma');
+  await setDoc(gRef(som('pappa'), 'g1'), gjoremal({ gjentas: 'maned' }));
+  await assertSucceeds(fullforMedKopi('pappa', 'g2'));
+  await assertFails(fullforMedKopi('mamma', 'g3'));
+});
+
+test('å angre fjerner kopien, og koblingen kan bare fjernes sammen med kopien', async () => {
+  await opprettFamilie();
+  await setDoc(gRef(som('pappa'), 'g1'), gjoremal({ gjentas: 'maned' }));
+  await fullforMedKopi('pappa', 'g2');
+  await assertFails(updateDoc(gRef(som('pappa'), 'g1'), { fullfort: null, fullfortAv: null, nesteId: null }));
+  const db = som('pappa');
+  const b = writeBatch(db);
+  b.delete(gRef(db, 'g2'));
+  b.update(gRef(db, 'g1'), { fullfort: null, fullfortAv: null, nesteId: null });
+  await assertSucceeds(b.commit());
+});

@@ -80,6 +80,49 @@ service cloud.firestore {
         allow read, write: if samling in ['barn', 'oppgaver', 'uker', 'push'] && medlem(familieId);
       }
 
+      // Gjøremål: felles liste for de voksne. Barna har ikke egne brukere, så det er PIN-låsen
+      // i appen som holder dem ute; reglene sørger for at bare familiens voksne kommer til.
+      match /gjoremal/{id} {
+        function gjoremalSti(gid) {
+          return /databases/$(database)/documents/familier/$(familieId)/gjoremal/$(gid);
+        }
+        function gyldig(d) {
+          return d.keys().hasOnly(['tittel', 'beskrivelse', 'frist', 'fristKl', 'gjentas', 'fullfort', 'fullfortAv', 'opprettet', 'opprettetAv', 'nesteId'])
+            && d.keys().hasAll(['tittel', 'beskrivelse', 'frist', 'fristKl', 'gjentas', 'fullfort', 'fullfortAv', 'opprettet', 'opprettetAv', 'nesteId'])
+            && d.tittel is string && d.tittel.trim().size() > 0 && d.tittel.size() <= 120
+            && (d.beskrivelse == null || (d.beskrivelse is string && d.beskrivelse.size() <= 1000))
+            && (d.frist == null || (d.frist is string && d.frist.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+            && (d.fristKl == null || (d.frist != null && d.fristKl is string && d.fristKl.matches('^[0-2][0-9]:[0-5][0-9]$')))
+            && (d.gjentas == null || d.gjentas in ['dag', 'uke', 'maned', 'ar'])
+            && (d.fullfort == null || d.fullfort is string)
+            && (d.fullfort == null) == (d.fullfortAv == null)
+            && d.opprettet is string
+            && d.opprettetAv is string
+            && (d.nesteId == null || d.nesteId is string);
+        }
+        allow read, delete: if medlem(familieId);
+        allow create: if medlem(familieId)
+          && gyldig(request.resource.data)
+          && request.resource.data.opprettetAv == request.auth.uid
+          && request.resource.data.fullfort == null
+          && request.resource.data.nesteId == null;
+        allow update: if medlem(familieId)
+          && gyldig(request.resource.data)
+          && request.resource.data.opprettetAv == resource.data.opprettetAv
+          && request.resource.data.opprettet == resource.data.opprettet
+          // Den som krysser av, står som den som fullførte.
+          && (request.resource.data.fullfortAv == resource.data.fullfortAv
+              || request.resource.data.fullfortAv == null
+              || request.resource.data.fullfortAv == request.auth.uid)
+          // Neste kopi av en gjentakende oppgave lages bare én gang. Krysser to voksne av samtidig,
+          // stoppes den siste. Koblingen kan bare fjernes når kopien slettes i samme skriving.
+          && (
+            request.resource.data.nesteId == resource.data.nesteId
+            || (resource.data.nesteId == null && existsAfter(gjoremalSti(request.resource.data.nesteId)))
+            || (request.resource.data.nesteId == null && !existsAfter(gjoremalSti(resource.data.nesteId)))
+          );
+      }
+
       // Avkrysninger. Når et barn krysser av (status «venter»), må pausen for oppgaven
       // oppdateres i samme skriving, og den godtas bare når forrige pause er over.
       match /utforelser/{id} {

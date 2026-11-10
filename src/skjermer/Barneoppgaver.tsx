@@ -11,7 +11,8 @@ import { Chip, Chips, Felt, Feilmelding, Knapp, Laster, Mynt, Rad, Skjerm, T, To
 import { avstand, radius, useFarger } from '@/ui/tema';
 
 
-export default function Oppgaver() {
+/** Barneoppgavene og hva de gir. Vises under Barna → Oppgaver. */
+export function Barneoppgaver() {
   const oppgaver = useOppgaver();
   const [redigerer, setRedigerer] = useState<Partial<Oppgave> | null>(null);
 
@@ -47,7 +48,16 @@ export default function Oppgaver() {
   );
 }
 
-function OppgaveSkjema({ start, onLukk }: { start: Partial<Oppgave>; onLukk: () => void }) {
+/** Skjema for ny eller endret barneoppgave. `onLagret` kalles etter lagring (brukes når et gjøremål gjøres om). */
+export function OppgaveSkjema({
+  start,
+  onLukk,
+  onLagret,
+}: {
+  start: Partial<Oppgave>;
+  onLukk: () => void;
+  onLagret?: () => void;
+}) {
   const f = useFarger();
   const lagre = useLagreOppgave();
   const arkiver = useArkiverOppgave();
@@ -74,6 +84,7 @@ function OppgaveSkjema({ start, onLukk }: { start: Partial<Oppgave>; onLukk: () 
         .map((s) => s.trim())
         .filter(Boolean),
     });
+    onLagret?.();
     onLukk();
   }
 
@@ -81,7 +92,7 @@ function OppgaveSkjema({ start, onLukk }: { start: Partial<Oppgave>; onLukk: () 
     <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onLukk}>
       <ScrollView style={{ backgroundColor: f.bg }} contentContainerStyle={styles.skjema} keyboardShouldPersistTaps="handled">
         <View style={styles.topp}>
-          <T v="tittel">{start.id ? 'Endre oppgave' : 'Ny oppgave'}</T>
+          <T v="tittel">{start.id ? 'Endre barneoppgave' : 'Ny barneoppgave'}</T>
           <Pressable onPress={onLukk} hitSlop={12} accessibilityRole="button">
             <T farge={f.merke} fet>
               Lukk
