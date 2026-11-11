@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optera stjernefeiring</title>
+<meta name="description" content="Designforslag: konfettibombe og stor stjerne som seiler til stjernehylla når et barn er ferdig med en oppgave.">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+:root {
+  --bg: #F3F6FB; --surface: #FFFFFF; --ink: #18243D; --muted: #5B6880; --line: #DCE3EF;
+  --brand: #2F5BEA; --brand-soft: #E3EAFF; --coin: #FFC43D; --coin-ink: #6B4A00;
+  --ok: #1E9E6A; --ok-soft: #DDF5EA; --wait: #B7791F; --wait-soft: #FFF1D6;
+  --phone: #0F1729; --screen: #FFFFFF; --kid: #FFF1C9;
+  --f-display: "Fredoka", "Nunito", system-ui, sans-serif;
+  --f-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1422; --surface: #172036; --ink: #E8EDF8; --muted: #9AA7C0; --line: #2A3652;
+  --brand: #7C9BFF; --brand-soft: #22305A; --coin: #FFCF5C; --coin-ink: #3D2A00;
+  --ok: #4CC994; --ok-soft: #173A2D; --wait: #F0B65A; --wait-soft: #3B2E14;
+  --phone: #000000; --screen: #121A2C; --kid: #3A3016; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0E1422; --surface: #172036; --ink: #E8EDF8; --muted: #9AA7C0; --line: #2A3652;
+  --brand: #7C9BFF; --brand-soft: #22305A; --coin: #FFCF5C; --coin-ink: #3D2A00;
+  --ok: #4CC994; --ok-soft: #173A2D; --wait: #F0B65A; --wait-soft: #3B2E14;
+  --phone: #000000; --screen: #121A2C; --kid: #3A3016; color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.55; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 40px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.prose { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; }
+h2 { font-size: 1.7rem; font-weight: 600; margin-top: 56px; margin-bottom: 12px; }
+h3 { font-size: 1.1rem; font-weight: 600; }
+p { margin: 0 0 12px; }
+.eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: .78rem; font-weight: 800; color: var(--brand); }
+.lead { font-size: 1.15rem; color: var(--muted); margin-top: 12px; }
+.status { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; padding: 6px 12px; border-radius: 999px;
+  background: var(--wait-soft); color: var(--wait); font-weight: 800; font-size: .9rem; }
+.status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--wait); }
+
+/* Demo: telefon + kontroller side om side, stables på mobil */
+.demo { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 32px; align-items: start; margin-top: 28px; }
+@media (max-width: 720px) { .demo { grid-template-columns: minmax(0, 1fr); justify-items: center; } }
+.phone { width: 100%; max-width: 320px; aspect-ratio: 9 / 18.5; background: var(--phone); border-radius: 40px; padding: 11px; box-shadow: 0 20px 50px -20px rgba(15,23,41,.45); }
+.scr { position: relative; width: 100%; height: 100%; background: var(--bg); border-radius: 30px; overflow: hidden;
+  display: flex; flex-direction: column; gap: 12px; padding: 34px 12px 12px; }
+.scr .notch { position: absolute; top: 8px; left: 50%; translate: -50% 0; width: 90px; height: 22px; border-radius: 12px; background: var(--phone); }
+
+.hero { position: relative; background: var(--brand); color: #fff; border-radius: 18px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.hero small { font-weight: 700; opacity: .9; font-size: 12px; }
+.hero .big { font-family: var(--f-display); font-size: 30px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.potrad { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.venterpille { display: inline-flex; align-items: center; gap: 4px; font-weight: 800; font-size: 12px; padding: 3px 9px; border-radius: 999px; background: rgba(255,255,255,.2); color: #fff; }
+.venterpille[hidden] { display: none; }
+.myntfly { position: absolute; z-index: 6; font-size: 22px; pointer-events: none; }
+.shelf { display: flex; flex-wrap: wrap; gap: 3px; min-height: 26px; padding: 4px 6px; border-radius: 12px; background: rgba(255,255,255,.14); }
+.shelf svg { width: 22px; height: 22px; display: block; }
+.shelf .slot { width: 22px; height: 22px; }
+.shelf .bump { animation: bump .45s cubic-bezier(.3,1.6,.5,1); }
+@keyframes bump { 0% { transform: scale(1.7); } 100% { transform: scale(1); } }
+.shelf .venter { animation: puste 1.8s ease-in-out infinite; }
+@keyframes puste { 50% { opacity: .55; } }
+.shelf .tenn { animation: tenn .7s cubic-bezier(.3,1.6,.5,1); }
+@keyframes tenn { 0% { transform: scale(.6) rotate(-30deg); filter: brightness(2); } 100% { transform: none; filter: none; } }
+
+.sek { font-family: var(--f-display); font-weight: 600; font-size: 15px; margin: 2px 2px 0; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.tile { position: relative; appearance: none; font: inherit; color: var(--ink); background: var(--surface); border: 2px solid var(--brand-soft); border-radius: 18px;
+  padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; }
+.tile:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.tile .ico { font-size: 34px; line-height: 1.2; }
+.tile .nm { font-weight: 800; font-size: 11px; }
+.tile .coin { font-size: 10px; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: var(--coin); color: var(--coin-ink); }
+.tile.squash { animation: squash .5s cubic-bezier(.3,1.6,.5,1); }
+@keyframes squash { 0% { transform: scale(.85); } 100% { transform: scale(1); } }
+
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--surface); border-radius: 26px 26px 30px 30px; padding: 18px 16px 22px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; transform: translateY(105%); transition: transform .28s cubic-bezier(.2,.8,.2,1); z-index: 3; }
+.sheet.open { transform: none; }
+.dim { position: absolute; inset: 0; background: rgba(10,16,30,.45); opacity: 0; pointer-events: none; transition: opacity .28s; z-index: 2; }
+.dim.open { opacity: 1; pointer-events: auto; }
+.sheet .ico { font-size: 64px; line-height: 1.1; }
+.sheet .t { font-family: var(--f-display); font-size: 20px; font-weight: 600; }
+.ferdig { appearance: none; border: 0; cursor: pointer; width: 100%; padding: 14px; border-radius: 18px; background: var(--ok); color: #fff;
+  font: 800 17px var(--f-body); display: flex; align-items: center; justify-content: center; gap: 10px; }
+.ferdig .hake { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.25); display: grid; place-items: center; font-size: 20px; }
+.ferdig:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+
+.fx { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.bigstar { position: absolute; left: 0; top: 0; width: 150px; height: 150px; z-index: 6; pointer-events: none; opacity: 0; }
+.rays { position: absolute; left: 0; top: 0; width: 300px; height: 300px; z-index: 4; pointer-events: none; opacity: 0;
+  background: repeating-conic-gradient(rgba(255,196,61,.0) 0 9deg, rgba(255,196,61,.35) 9deg 18deg);
+  -webkit-mask: radial-gradient(circle, #000 25%, transparent 68%); mask: radial-gradient(circle, #000 25%, transparent 68%); border-radius: 50%; }
+
+/* Kontrollpanel */
+.panel { display: flex; flex-direction: column; gap: 16px; min-width: 0; width: 100%; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { appearance: none; font: 800 15px var(--f-body); padding: 10px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.btn.pri { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; font-weight: 700; font-size: .95rem; }
+.toggles label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.muted { color: var(--muted); }
+
+/* Tidslinje */
+.timeline { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 10px; }
+.timeline li { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: baseline; }
+.timeline .ts { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--brand); font-size: .9rem; }
+
+/* Storyboard */
+.story { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; margin-top: 18px; }
+.story figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.story svg { width: 100%; height: auto; display: block; }
+.story figcaption b { display: block; font-family: var(--f-display); font-weight: 600; font-size: 1.05rem; }
+.story figcaption { font-size: .95rem; color: var(--muted); }
+.story figcaption b { color: var(--ink); }
+
+/* Stjernen */
+.starsheet { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: center; margin-top: 16px; }
+@media (max-width: 720px) { .starsheet { grid-template-columns: minmax(0, 1fr); } }
+.starbig { background: radial-gradient(circle at 50% 45%, var(--kid), transparent 70%); border-radius: 24px; display: grid; place-items: center; padding: 16px; }
+.starbig svg { width: min(100%, 300px); height: auto; animation: svev 3s ease-in-out infinite; }
+@keyframes svev { 50% { transform: translateY(-8px) rotate(3deg); } }
+.states { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.state { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px; text-align: center; font-size: .9rem; }
+.state .chip { background: var(--brand); border-radius: 14px; padding: 12px; display: grid; place-items: center; margin-bottom: 8px; }
+.state .chip svg { width: 44px; height: 44px; }
+.state b { display: block; }
+
+.decisions { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-top: 16px; }
+.decision { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.decision .q { font-weight: 800; }
+.decision .rec { background: var(--brand-soft); border-radius: 10px; padding: 10px 12px; font-size: .95rem; }
+.decision .rec b { color: var(--brand); }
+.decision .alt { font-size: .9rem; color: var(--muted); }
+ul.tight { margin: 0; padding-left: 20px; }
+ul.tight li { margin-bottom: 6px; }
+
+@media (prefers-reduced-motion: reduce) { .starbig svg, .shelf .venter { animation: none; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE27A"/><stop offset=".55" stop-color="#FFC43D"/><stop offset="1" stop-color="#FFA81F"/>
+    </linearGradient>
+    <symbol id="stjerne" viewBox="0 0 100 100">
+      <polygon points="50,8 62.34,33.01 89.94,37.02 69.97,56.49 74.69,83.98 50,71 25.31,83.98 30.03,56.49 10.06,37.02 37.66,33.01"
+        fill="url(#gull)" stroke="#F2A200" stroke-width="9" stroke-linejoin="round"/>
+      <polygon points="50,8 62.34,33.01 89.94,37.02 69.97,56.49 74.69,83.98 50,71 25.31,83.98 30.03,56.49 10.06,37.02 37.66,33.01"
+        fill="url(#gull)" stroke="url(#gull)" stroke-width="5" stroke-linejoin="round"/>
+      <ellipse cx="38" cy="32" rx="7" ry="4" fill="#fff" opacity=".7" transform="rotate(-35 38 32)"/>
+    </symbol>
+    <symbol id="stjerne-fjes" viewBox="0 0 100 100">
+      <use href="#stjerne"/>
+      <circle cx="42" cy="50" r="3.6" fill="#6B4A00"/><circle cx="58" cy="50" r="3.6" fill="#6B4A00"/>
+      <circle cx="43.2" cy="48.8" r="1.2" fill="#fff"/><circle cx="59.2" cy="48.8" r="1.2" fill="#fff"/>
+      <circle cx="35" cy="58" r="4" fill="#FF7A9A" opacity=".45"/><circle cx="65" cy="58" r="4" fill="#FF7A9A" opacity=".45"/>
+      <path d="M43 57 Q50 64 57 57" fill="none" stroke="#6B4A00" stroke-width="3.2" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="stjerne-venter" viewBox="0 0 100 100">
+      <polygon points="50,8 62.34,33.01 89.94,37.02 69.97,56.49 74.69,83.98 50,71 25.31,83.98 30.03,56.49 10.06,37.02 37.66,33.01"
+        fill="rgba(255,255,255,.28)" stroke="#fff" stroke-width="7" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="stjerne-tom" viewBox="0 0 100 100">
+      <polygon points="50,8 62.34,33.01 89.94,37.02 69.97,56.49 74.69,83.98 50,71 25.31,83.98 30.03,56.49 10.06,37.02 37.66,33.01"
+        fill="none" stroke="rgba(255,255,255,.35)" stroke-width="6" stroke-linejoin="round" stroke-dasharray="10 9"/>
+    </symbol>
+  </defs>
+</svg>
+
+<main class="wrap">
+  <header class="prose">
+    <div class="eyebrow">Optera · designforslag</div>
+    <h1>Stjernefeiring når en oppgave er gjort</h1>
+    <p class="lead">Barnet trykker på den grønne haken. Det smeller en liten konfettibombe, en stor glad stjerne spretter fram og seiler opp til stjernehylla. Stjerna er barnets med en gang, pengene venter på godkjenning. Ingen tekst trengs.</p>
+    <div class="status">Venter på godkjenning</div>
+  </header>
+
+  <section class="demo" aria-label="Prøv animasjonen">
+    <div class="phone">
+      <div class="scr" id="scr">
+        <div class="notch"></div>
+        <div class="hero">
+          <small>Uke 46 · tjent så langt</small>
+          <div class="potrad"><div class="big" id="pott">45 kr</div><span class="venterpille" id="venter" hidden></span></div>
+          <div class="shelf" id="shelf" aria-label="Stjernene dine"></div>
+        </div>
+        <div class="sek">Hva har du gjort?</div>
+        <div class="grid" id="grid"></div>
+        <canvas class="fx" id="fx"></canvas>
+        <div class="rays" id="rays"></div>
+        <svg class="bigstar" id="bigstar" viewBox="0 0 100 100" aria-hidden="true"><use href="#stjerne-fjes"/></svg>
+        <div class="dim" id="dim"></div>
+        <div class="sheet" id="sheet" role="dialog" aria-label="Er du ferdig?">
+          <div class="ico" id="sheetIco">🧸</div>
+          <div class="t" id="sheetT">Rydde rommet</div>
+          <button class="ferdig" id="ferdig"><span class="hake">✓</span>Ferdig!</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <h3>Prøv selv</h3>
+        <p class="muted" style="margin-top:6px">Trykk på en oppgave i telefonen og så på den grønne haken. Eller bruk knappen under.</p>
+        <div class="btns">
+          <button class="btn pri" id="spill">▶ Spill av feiringen</button>
+          <button class="btn" id="godkjenn">Voksen godkjenner pengene ✓</button>
+          <button class="btn" id="nullstill">Nullstill</button>
+        </div>
+        <div class="toggles">
+          <label><input type="checkbox" id="sakte"> Sakte film</label>
+          <label><input type="checkbox" id="lyd"> Lyd</label>
+          <label><input type="checkbox" id="rolig"> Redusert bevegelse</label>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Slik går det, omtrent 2 sekunder</h3>
+        <ol class="timeline">
+          <li><span class="ts">0,0 s</span><span>Arket glir ned. Ruta barnet valgte spretter litt.</span></li>
+          <li><span class="ts">0,25 s</span><span><b>Pang!</b> Konfetti skytes ut fra ruta i appens farger. Telefonen gir et lite dunk (vibrasjon).</span></li>
+          <li><span class="ts">0,3 s</span><span>Den store stjerna spretter fram midt på skjermen med glorie og et «pling».</span></li>
+          <li><span class="ts">1,2 s</span><span>Stjerna krymper og seiler i en bue opp til hylla, med glitter etter seg.</span></li>
+          <li><span class="ts">2,0 s</span><span>Den lander på neste ledige plass som gull. Hylla hopper. Ved beløpet dukker «⏳ +5 kr» opp. Barnet kan trykke videre.</span></li>
+          <li><span class="ts">Senere</span><span>En voksen godkjenner. Mynten hopper over i potten og beløpet øker.</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Storyboard</h2>
+    <p class="prose muted">Fire bilder som viser hele feiringen.</p>
+    <div class="story">
+      <figure>
+        <svg viewBox="0 0 200 260" role="img" aria-label="Barnet trykker på den grønne haken">
+          <rect x="30" y="6" width="140" height="248" rx="22" fill="#0F1729"/>
+          <rect x="37" y="13" width="126" height="234" rx="16" fill="#F3F6FB"/>
+          <rect x="45" y="24" width="110" height="46" rx="10" fill="#2F5BEA"/>
+          <g transform="translate(51 50)"><use href="#stjerne" width="12" height="12"/><use href="#stjerne" x="13" width="12" height="12"/><use href="#stjerne" x="26" width="12" height="12"/><use href="#stjerne-tom" x="39" width="12" height="12"/></g>
+          <rect x="37" y="120" width="126" height="127" rx="16" fill="#fff"/>
+          <rect x="37" y="13" width="126" height="107" fill="rgba(10,16,30,.35)"/>
+          <text x="100" y="168" font-size="40" text-anchor="middle">🧸</text>
+          <rect x="52" y="190" width="96" height="32" rx="12" fill="#1E9E6A"/>
+          <circle cx="72" cy="206" r="10" fill="rgba(255,255,255,.3)"/><path d="M67 206 l4 4 l7 -8" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="120" cy="214" r="14" fill="rgba(47,91,234,.25)"/><text x="122" y="232" font-size="22">👆</text>
+        </svg>
+        <figcaption><b>1. Trykk på haken</b>Stor grønn knapp med hake. Den er lett å forstå uten å lese.</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 200 260" role="img" aria-label="Konfetti smeller og stjerna spretter fram">
+          <rect x="30" y="6" width="140" height="248" rx="22" fill="#0F1729"/>
+          <rect x="37" y="13" width="126" height="234" rx="16" fill="#F3F6FB"/>
+          <rect x="45" y="24" width="110" height="46" rx="10" fill="#2F5BEA"/>
+          <g transform="translate(51 50)"><use href="#stjerne" width="12" height="12"/><use href="#stjerne" x="13" width="12" height="12"/><use href="#stjerne" x="26" width="12" height="12"/><use href="#stjerne-tom" x="39" width="12" height="12"/></g>
+          <rect x="47" y="180" width="32" height="36" rx="8" fill="#fff" stroke="#E3EAFF" stroke-width="2"/><text x="63" y="204" font-size="18" text-anchor="middle">🧸</text>
+          <g>
+            <rect x="40" y="150" width="7" height="4" fill="#E0457B" transform="rotate(30 43 152)"/>
+            <rect x="88" y="160" width="7" height="4" fill="#2F5BEA" transform="rotate(-20 91 162)"/>
+            <rect x="70" y="140" width="6" height="4" fill="#1E9E6A" transform="rotate(60 73 142)"/>
+            <circle cx="52" cy="168" r="2.6" fill="#FFC43D"/><circle cx="96" cy="186" r="2.6" fill="#8B5CF6"/>
+            <rect x="44" y="226" width="7" height="4" fill="#F28C38" transform="rotate(10 47 228)"/>
+            <rect x="90" y="214" width="6" height="4" fill="#0EA5B7" transform="rotate(-45 93 216)"/>
+            <circle cx="40" cy="198" r="2.4" fill="#E0457B"/><circle cx="78" cy="134" r="2.4" fill="#2F5BEA"/>
+            <rect x="60" y="232" width="6" height="4" fill="#FFC43D" transform="rotate(70 63 234)"/>
+          </g>
+          <circle cx="120" cy="125" r="44" fill="#FFC43D" opacity=".18"/>
+          <use href="#stjerne-fjes" x="86" y="91" width="68" height="68"/>
+          <path d="M150 92 l3 -8 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 z" fill="#FFC43D"/>
+        </svg>
+        <figcaption><b>2. Pang!</b>Konfetti skytes ut fra oppgaven. Den store stjerna spretter fram og smiler.</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 200 260" role="img" aria-label="Stjerna seiler i en bue opp til hylla">
+          <rect x="30" y="6" width="140" height="248" rx="22" fill="#0F1729"/>
+          <rect x="37" y="13" width="126" height="234" rx="16" fill="#F3F6FB"/>
+          <rect x="45" y="24" width="110" height="46" rx="10" fill="#2F5BEA"/>
+          <g transform="translate(51 50)"><use href="#stjerne" width="12" height="12"/><use href="#stjerne" x="13" width="12" height="12"/><use href="#stjerne" x="26" width="12" height="12"/><use href="#stjerne-tom" x="39" width="12" height="12"/></g>
+          <path d="M100 160 Q150 110 96 58" fill="none" stroke="#FFC43D" stroke-width="2.5" stroke-dasharray="3 6" stroke-linecap="round"/>
+          <circle cx="112" cy="148" r="2" fill="#FFC43D"/><circle cx="128" cy="128" r="1.6" fill="#FFC43D"/><circle cx="131" cy="104" r="1.4" fill="#FFC43D"/>
+          <use href="#stjerne-fjes" x="108" y="68" width="34" height="34" transform="rotate(-15 125 85)"/>
+          <rect x="45" y="190" width="34" height="38" rx="8" fill="#fff" stroke="#E3EAFF" stroke-width="2"/><text x="62" y="215" font-size="18" text-anchor="middle">🧸</text>
+          <rect x="83" y="190" width="34" height="38" rx="8" fill="#fff" stroke="#E3EAFF" stroke-width="2"/><text x="100" y="215" font-size="18" text-anchor="middle">🍽️</text>
+          <rect x="121" y="190" width="34" height="38" rx="8" fill="#fff" stroke="#E3EAFF" stroke-width="2"/><text x="138" y="215" font-size="18" text-anchor="middle">🐶</text>
+        </svg>
+        <figcaption><b>3. Stjerna seiler</b>Den krymper og flyr i en bue opp til de andre stjernene, med glitter bak seg.</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 200 260" role="img" aria-label="Stjerna har landet på hylla">
+          <rect x="30" y="6" width="140" height="248" rx="22" fill="#0F1729"/>
+          <rect x="37" y="13" width="126" height="234" rx="16" fill="#F3F6FB"/>
+          <rect x="45" y="24" width="110" height="46" rx="10" fill="#2F5BEA"/>
+          <g transform="translate(51 50)"><use href="#stjerne" width="12" height="12"/><use href="#stjerne" x="13" width="12" height="12"/><use href="#stjerne" x="26" width="12" height="12"/><use href="#stjerne" x="37" y="-2" width="16" height="16"/></g>
+          <rect x="100" y="30" width="44" height="13" rx="6.5" fill="rgba(255,255,255,.25)"/><text x="122" y="40" font-size="8.5" font-weight="800" fill="#fff" text-anchor="middle" font-family="Nunito, sans-serif">⏳ +5 kr</text>
+          <circle cx="96" cy="56" r="13" fill="none" stroke="#fff" stroke-width="1.5" opacity=".6"/>
+          <path d="M112 40 l2 -5 l2 5 l5 2 l-5 2 l-2 5 l-2 -5 l-5 -2 z" fill="#fff"/>
+          <rect x="45" y="100" width="34" height="38" rx="8" fill="#fff" stroke="#E3EAFF" stroke-width="2"/><text x="62" y="125" font-size="18" text-anchor="middle">🧸</text>
+          <rect x="83" y="100" width="34" height="38" rx="8" fill="#fff" stroke="#E3EAFF" stroke-width="2"/><text x="100" y="125" font-size="18" text-anchor="middle">🍽️</text>
+          <rect x="121" y="100" width="34" height="38" rx="8" fill="#fff" stroke="#E3EAFF" stroke-width="2"/><text x="138" y="125" font-size="18" text-anchor="middle">🐶</text>
+          <rect x="45" y="144" width="34" height="38" rx="8" fill="#fff" stroke="#E3EAFF" stroke-width="2"/><text x="62" y="169" font-size="18" text-anchor="middle">🪴</text>
+          <rect x="83" y="144" width="34" height="38" rx="8" fill="#fff" stroke="#E3EAFF" stroke-width="2"/><text x="100" y="169" font-size="18" text-anchor="middle">🗑️</text>
+          <rect x="121" y="144" width="34" height="38" rx="8" fill="#fff" stroke="#E3EAFF" stroke-width="2"/><text x="138" y="169" font-size="18" text-anchor="middle">🦷</text>
+        </svg>
+        <figcaption><b>4. Landet!</b>Stjerna er barnets med en gang. Pengene står og venter ved beløpet til en voksen godkjenner.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Stjerna</h2>
+    <div class="starsheet">
+      <div class="starbig">
+        <svg viewBox="-10 -10 120 120" role="img" aria-label="Den store, glade stjerna">
+          <circle cx="50" cy="50" r="52" fill="#FFC43D" opacity=".16"/>
+          <use href="#stjerne-fjes" width="100" height="100"/>
+          <path d="M94 12 l3 -9 l3 9 l9 3 l-9 3 l-3 9 l-3 -9 l-9 -3 z" fill="#FFC43D"/>
+          <path d="M2 80 l2 -6 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 z" fill="#FFC43D" opacity=".8"/>
+        </svg>
+      </div>
+      <div>
+        <p>En rund, myk gullstjerne med et lite smil. Den bruker gullfargen fra myntene i appen, så barna kobler stjerne og belønning. Fjeset vises bare på den store stjerna. På hylla er stjernene små og enkle.</p>
+        <div class="states">
+          <div class="state"><div class="chip"><svg viewBox="0 0 100 100"><use href="#stjerne-tom"/></svg></div><b>Ledig plass</b><span class="muted">Viser hvor neste stjerne lander</span></div>
+          <div class="state"><div class="chip"><svg viewBox="0 0 100 100"><use href="#stjerne"/></svg></div><b>Samlet</b><span class="muted">Gull med en gang barnet er ferdig</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Stjernehylla</h2>
+    <div class="prose">
+      <ul class="tight">
+        <li>I dag står det «⭐ 3 stjerner» som tekst. Den byttes ut med en rad med ekte stjerner, så barna kan telle selv.</li>
+        <li>Hylla viser ukens stjerner og én stiplet ledig plass. Får barnet mange, blir stjernene litt mindre og fyller to rader.</li>
+        <li>Teksten «Bra jobba! … er sendt til godkjenning» forsvinner. Feiringen sier det samme uten ord.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Stjerne og penger er adskilt</h2>
+    <div class="decisions">
+      <div class="decision"><div class="q">⭐ Stjerna</div><div>Kommer med en gang barnet trykker på haken, med konfetti. Den er barnets.</div></div>
+      <div class="decision"><div class="q">🪙 Pengene</div><div>Står som «⏳ +5 kr» ved siden av beløpet. Når en voksen godkjenner, hopper mynten over i potten.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>To valg til deg</h2>
+    <div class="decisions">
+      <div class="decision">
+        <div class="q">Hva skjer med stjerna hvis du avviser oppgaven?</div>
+        <div class="rec"><b>Forslag:</b> Stjerna blir. Barnet prøvde, og pausen mellom avkrysninger hindrer at noen trykker for moro skyld. Bare pengene faller bort.</div>
+        <div class="alt">Alternativ: Stjerna toner rolig bort igjen fra hylla.</div>
+      </div>
+      <div class="decision">
+        <div class="q">Lyd?</div>
+        <div class="rec"><b>Forslag:</b> Et kort «pling» og en liten vibrasjon er på. Kan slås av under Mer.</div>
+        <div class="alt">Alternativ: Bare vibrasjon, ingen lyd.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Teknisk, kort</h2>
+    <div class="prose">
+      <ul class="tight">
+        <li>Alt skjer på telefonen og virker uten nett. Ingen nye tjenester og ingen kostnad.</li>
+        <li>Animasjonen lages med Reanimated, som appen allerede har. Stjerna tegnes med react-native-svg. Vibrasjon med expo-haptics og lyd med expo-audio. Lyd og vibrasjon finnes ikke i web-appen på iPhone, der blir det bare bilde.</li>
+        <li>Har telefonen «Reduser bevegelse» på, toner stjerna rett inn på hylla uten konfetti og flyging.</li>
+        <li>Stjernetellingen flyttes fra «godkjente oppgaver» til «avkryssede oppgaver». Pengene regnes som før, bare godkjente.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const OPPGAVER = [
+    ['🧸', 'Rydde', '5 kr'], ['🍽️', 'Dekke bordet', '5 kr'], ['🐶', 'Mate hunden', '3 kr'],
+    ['🪴', 'Vanne', '2 kr'], ['🗑️', 'Søppel', '5 kr'], ['🦷', 'Pusse tenner', '1 kr'],
+  ];
+  const STARTGODKJENT = 3;
+  const scr = document.getElementById('scr');
+  const grid = document.getElementById('grid');
+  const shelf = document.getElementById('shelf');
+  const canvas = document.getElementById('fx');
+  const ctx = canvas.getContext('2d');
+  const bigstar = document.getElementById('bigstar');
+  const rays = document.getElementById('rays');
+  const sheet = document.getElementById('sheet');
+  const dim = document.getElementById('dim');
+  const sakte = document.getElementById('sakte');
+  const lyd = document.getElementById('lyd');
+  const rolig = document.getElementById('rolig');
+  try { if (matchMedia('(prefers-reduced-motion: reduce)').matches) rolig.checked = true; } catch (e) {}
+
+  let stjerner = []; // 'godkjent' | 'venter'
+  let valgt = null;
+  let opptatt = false;
+
+  OPPGAVER.forEach(([ico, nm, kr], i) => {
+    const b = document.createElement('button');
+    b.className = 'tile';
+    b.innerHTML = `<span class="ico">${ico}</span><span class="nm">${nm}</span><span class="coin">${kr}</span>`;
+    b.setAttribute('aria-label', `${nm}, ${kr}`);
+    b.addEventListener('click', () => apneArk(i));
+    grid.appendChild(b);
+  });
+
+  function tegnHylle(nyIndex, tenn) {
+    shelf.innerHTML = '';
+    stjerner.forEach((s, i) => {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.setAttribute('viewBox', '0 0 100 100');
+      svg.innerHTML = `<use href="#${s === 'godkjent' ? 'stjerne' : 'stjerne-venter'}"/>`;
+      if (s === 'venter') svg.classList.add('venter');
+      if (i === nyIndex) svg.classList.add('bump');
+      if (tenn && tenn.includes(i)) svg.classList.add('tenn');
+      shelf.appendChild(svg);
+    });
+    const ledig = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    ledig.setAttribute('viewBox', '0 0 100 100');
+    ledig.innerHTML = '<use href="#stjerne-tom"/>';
+    ledig.id = 'ledig';
+    shelf.appendChild(ledig);
+  }
+  function nullstill() { stjerner = Array(STARTGODKJENT).fill('godkjent'); pott = 45; venterKr = 0; visPenger(); tegnHylle(-1); }
+
+  function apneArk(i) {
+    if (opptatt) return;
+    valgt = i;
+    document.getElementById('sheetIco').textContent = OPPGAVER[i][0];
+    document.getElementById('sheetT').textContent = OPPGAVER[i][1];
+    sheet.classList.add('open'); dim.classList.add('open');
+    setTimeout(() => document.getElementById('ferdig').focus({ preventScroll: true }), 300);
+  }
+  function lukkArk() { sheet.classList.remove('open'); dim.classList.remove('open'); }
+  dim.addEventListener('click', lukkArk);
+  document.getElementById('ferdig').addEventListener('click', () => { lukkArk(); feir(valgt ?? 0); });
+  document.getElementById('spill').addEventListener('click', () => { if (!opptatt) feir(0); });
+  document.getElementById('nullstill').addEventListener('click', () => { if (!opptatt) nullstill(); });
+  // Penger: venter til en voksen godkjenner. Stjernene er allerede barnets.
+  let pott = 45, venterKr = 0;
+  const pottEl = document.getElementById('pott'), venterEl = document.getElementById('venter');
+  function visPenger() {
+    pottEl.textContent = pott + ' kr';
+    venterEl.hidden = venterKr === 0;
+    venterEl.textContent = '⏳ +' + venterKr + ' kr';
+  }
+  function leggTilVenter(i) { venterKr += parseInt(OPPGAVER[i][2], 10); visPenger(); }
+  document.getElementById('godkjenn').addEventListener('click', async () => {
+    if (!venterKr || opptatt) return;
+    const fra = rel(venterEl), til = rel(pottEl);
+    const m = document.createElement('div'); m.className = 'myntfly'; m.textContent = '🪙'; scr.appendChild(m);
+    const a = m.animate([
+      { transform: `translate(${fra.x - 11}px, ${fra.y - 14}px) scale(1)` },
+      { transform: `translate(${(fra.x + til.x) / 2 - 11}px, ${fra.y - 40}px) scale(1.3)`, offset: .5 },
+      { transform: `translate(${til.x - 11}px, ${til.y - 14}px) scale(.6)`, opacity: .2 },
+    ], { duration: varighet(600), easing: 'ease-in-out', fill: 'forwards' });
+    venterEl.hidden = true;
+    await a.finished; m.remove();
+    pott += venterKr; venterKr = 0; visPenger();
+    pottEl.animate([{ transform: 'scale(1.25)' }, { transform: 'scale(1)' }], { duration: varighet(400), easing: 'cubic-bezier(.3,1.6,.5,1)' });
+    pling(1.3);
+  });
+
+  // Posisjon relativt til skjermen, i skjermens egne (uskalerte) piksler.
+  function rel(el) {
+    const a = el.getBoundingClientRect(), s = scr.getBoundingClientRect();
+    const k = scr.offsetWidth / s.width;
+    return { x: (a.left - s.left + a.width / 2) * k, y: (a.top - s.top + a.height / 2) * k, w: a.width * k };
+  }
+
+  // Konfetti
+  const FARGER = ['#FFC43D', '#2F5BEA', '#1E9E6A', '#E0457B', '#8B5CF6', '#F28C38', '#0EA5B7'];
+  let biter = [], gnister = [], rafId = 0, sist = 0;
+  function tilpassCanvas() {
+    const d = window.devicePixelRatio || 1;
+    canvas.width = scr.offsetWidth * d; canvas.height = scr.offsetHeight * d;
+    canvas.style.width = scr.offsetWidth + 'px'; canvas.style.height = scr.offsetHeight + 'px';
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  function bombe(x, y) {
+    for (let i = 0; i < 70; i++) {
+      const v = -Math.PI / 2 + (Math.random() - .5) * Math.PI * 1.5;
+      const fart = 260 + Math.random() * 380;
+      biter.push({ x, y, vx: Math.cos(v) * fart, vy: Math.sin(v) * fart, r: Math.random() * Math.PI, vr: (Math.random() - .5) * 14,
+        w: 5 + Math.random() * 5, h: 3 + Math.random() * 3, rund: Math.random() < .3, f: FARGER[i % FARGER.length], liv: 0, maks: 1.3 + Math.random() * .5 });
+    }
+    gnister.push({ ring: true, x, y, liv: 0, maks: .45 });
+  }
+  function gnist(x, y) { gnister.push({ x: x + (Math.random() - .5) * 14, y: y + (Math.random() - .5) * 14, liv: 0, maks: .5 + Math.random() * .3, s: 2 + Math.random() * 3 }); }
+  function tikk(t) {
+    const dt = Math.min(.05, (t - sist) / 1000) * (sakte.checked ? .3 : 1); sist = t;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    biter = biter.filter(p => (p.liv += dt) < p.maks);
+    for (const p of biter) {
+      p.vy += 900 * dt; p.vx *= Math.pow(.25, dt); p.vy *= Math.pow(.55, dt);
+      p.x += p.vx * dt; p.y += p.vy * dt; p.r += p.vr * dt;
+      ctx.globalAlpha = Math.min(1, (p.maks - p.liv) / .35);
+      ctx.fillStyle = p.f; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
+      if (p.rund) { ctx.beginPath(); ctx.arc(0, 0, p.h * .9, 0, Math.PI * 2); ctx.fill(); }
+      else ctx.fillRect(-p.w / 2, -p.h / 2 * Math.abs(Math.cos(p.r * 2)), p.w, p.h * Math.abs(Math.cos(p.r * 2)) + .5);
+      ctx.restore();
+    }
+    gnister = gnister.filter(g => (g.liv += dt) < g.maks);
+    for (const g of gnister) {
+      const a = 1 - g.liv / g.maks;
+      if (g.ring) { ctx.globalAlpha = a; ctx.strokeStyle = '#FFC43D'; ctx.lineWidth = 4 * a; ctx.beginPath(); ctx.arc(g.x, g.y, 10 + 60 * (g.liv / g.maks), 0, Math.PI * 2); ctx.stroke(); }
+      else { ctx.globalAlpha = a; ctx.fillStyle = '#FFC43D'; const s = g.s * a + 1; ctx.beginPath();
+        ctx.moveTo(g.x, g.y - s * 2); ctx.lineTo(g.x + s * .6, g.y - s * .6); ctx.lineTo(g.x + s * 2, g.y); ctx.lineTo(g.x + s * .6, g.y + s * .6);
+        ctx.lineTo(g.x, g.y + s * 2); ctx.lineTo(g.x - s * .6, g.y + s * .6); ctx.lineTo(g.x - s * 2, g.y); ctx.lineTo(g.x - s * .6, g.y - s * .6); ctx.fill(); }
+    }
+    ctx.globalAlpha = 1;
+    rafId = (biter.length || gnister.length || opptatt) ? requestAnimationFrame(tikk) : 0;
+  }
+  function startLoop() { if (!rafId) { sist = performance.now(); rafId = requestAnimationFrame(tikk); } }
+
+  // Lyd (bare i mockupen): kort pling laget med WebAudio.
+  let ac;
+  function pling(hoyde = 1) {
+    if (!lyd.checked) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      [880, 1320, 1760].forEach((hz, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(), t0 = ac.currentTime + i * .07;
+        o.type = 'sine'; o.frequency.value = hz * hoyde; g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(.18, t0 + .01); g.gain.exponentialRampToValueAtTime(.001, t0 + .35);
+        o.connect(g).connect(ac.destination); o.start(t0); o.stop(t0 + .4);
+      });
+    } catch (e) {}
+  }
+
+  const vent = ms => new Promise(r => setTimeout(r, ms * (sakte.checked ? 3.3 : 1)));
+  const varighet = ms => ms * (sakte.checked ? 3.3 : 1);
+
+  async function feir(i) {
+    opptatt = true;
+    tilpassCanvas(); startLoop();
+    const tile = grid.children[i];
+    const S = 150, W = scr.offsetWidth, H = scr.offsetHeight;
+    const nyIndex = stjerner.length;
+
+    if (rolig.checked) {
+      await vent(250);
+      stjerner.push('godkjent'); leggTilVenter(i); tegnHylle(nyIndex);
+      shelf.children[nyIndex].animate([{ opacity: 0 }, { opacity: 1 }], { duration: varighet(400) });
+      pling(); opptatt = false; return;
+    }
+
+    await vent(220);
+    tile.classList.remove('squash'); void tile.offsetWidth; tile.classList.add('squash');
+    const fra = rel(tile);
+    bombe(fra.x, fra.y);
+    if (navigator.vibrate) try { navigator.vibrate(25); } catch (e) {}
+
+    await vent(60);
+    pling();
+    const cx = W / 2 - S / 2, cy = H * .42 - S / 2;
+    rays.style.opacity = '1';
+    const raysAnim = rays.animate([
+      { transform: `translate(${W / 2 - 150}px, ${H * .42 - 150}px) scale(.2) rotate(0deg)`, opacity: 0 },
+      { transform: `translate(${W / 2 - 150}px, ${H * .42 - 150}px) scale(1) rotate(40deg)`, opacity: 1, offset: .3 },
+      { transform: `translate(${W / 2 - 150}px, ${H * .42 - 150}px) scale(1.05) rotate(110deg)`, opacity: 1, offset: .8 },
+      { transform: `translate(${W / 2 - 150}px, ${H * .42 - 150}px) scale(.4) rotate(140deg)`, opacity: 0 },
+    ], { duration: varighet(1100), fill: 'forwards' });
+    const inn = bigstar.animate([
+      { transform: `translate(${cx}px, ${cy}px) scale(0) rotate(-40deg)`, opacity: 0 },
+      { transform: `translate(${cx}px, ${cy}px) scale(1.25) rotate(8deg)`, opacity: 1, offset: .65 },
+      { transform: `translate(${cx}px, ${cy}px) scale(1) rotate(0deg)`, opacity: 1 },
+    ], { duration: varighet(420), easing: 'cubic-bezier(.2,.9,.3,1.2)', fill: 'forwards' });
+    await inn.finished;
+    const vrikk = bigstar.animate([
+      { transform: `translate(${cx}px, ${cy}px) scale(1) rotate(0deg)` },
+      { transform: `translate(${cx}px, ${cy - 6}px) scale(1.04) rotate(-6deg)` },
+      { transform: `translate(${cx}px, ${cy}px) scale(1) rotate(5deg)` },
+      { transform: `translate(${cx}px, ${cy}px) scale(1) rotate(0deg)` },
+    ], { duration: varighet(480), easing: 'ease-in-out', fill: 'forwards' });
+    await vrikk.finished;
+
+    // Seil i en bue til ledig plass på hylla.
+    const mal = rel(document.getElementById('ledig'));
+    const skala = mal.w / S;
+    const p0 = { x: W / 2, y: H * .42 }, p2 = { x: mal.x, y: mal.y };
+    const p1 = { x: Math.min(W - 30, Math.max(p0.x, p2.x) + 90), y: (p0.y + p2.y) / 2 + 20 };
+    const steg = 24, kf = [];
+    for (let k = 0; k <= steg; k++) {
+      const t = k / steg, e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      const x = (1 - e) ** 2 * p0.x + 2 * (1 - e) * e * p1.x + e * e * p2.x;
+      const y = (1 - e) ** 2 * p0.y + 2 * (1 - e) * e * p1.y + e * e * p2.y;
+      const s = 1 + (skala - 1) * e;
+      kf.push({ transform: `translate(${x - S / 2}px, ${y - S / 2}px) scale(${s}) rotate(${-25 * Math.sin(Math.PI * e)}deg)` });
+    }
+    const fly = bigstar.animate(kf, { duration: varighet(800), fill: 'forwards' });
+    const spor = setInterval(() => {
+      const m = new DOMMatrix(getComputedStyle(bigstar).transform);
+      gnist(m.e + S / 2, m.f + S / 2);
+    }, 30);
+    await fly.finished;
+    clearInterval(spor);
+
+    stjerner.push('godkjent'); leggTilVenter(i); tegnHylle(nyIndex);
+    bigstar.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 60, fill: 'forwards' });
+    const land = rel(shelf.children[nyIndex]);
+    for (let k = 0; k < 8; k++) gnist(land.x, land.y);
+    pling(1.5);
+    await vent(300);
+    bigstar.getAnimations().forEach(a => a.cancel());
+    raysAnim.cancel(); rays.style.opacity = '0';
+    opptatt = false;
+  }
+  nullstill();
+})();
+</script>
+</body>
+</html>
