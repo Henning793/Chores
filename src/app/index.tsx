@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useBarn, useMeg, useVoksne } from '@/data/familie';
 import { useProfil } from '@/data/profil';
 import { useUtforelser } from '@/data/utforelser';
+import { antallStjerner } from '@/lib/stjerner';
 import { ukeStart } from '@/lib/uke';
 import { Avatar, Laster, Seksjon, Skjerm, T, Tom } from '@/ui/komponenter';
 import { avstand, radius, useFarger } from '@/ui/tema';
@@ -29,8 +30,7 @@ export default function Hvem() {
   if (barn.isPending || voksne.isPending) return <Laster />;
 
   const denneUka = ukeStart();
-  const stjerner = (barnId: string) =>
-    utforelser.data.filter((u) => u.barnId === barnId && u.ukeStart === denneUka && u.status === 'godkjent').length;
+  const stjerner = (barnId: string) => antallStjerner(utforelser.data, barnId, denneUka);
   const venter = utforelser.data.filter((u) => u.status === 'venter').length;
   const synligeBarn = (barn.data ?? []).filter((b) => !lastBarn || b.id === lastBarn);
 
