@@ -19,6 +19,7 @@ import { useProfil } from '@/data/profil';
 import { avregistrerVarsler } from '@/data/varsler';
 import type { Barn } from '@/data/typer';
 import { feiltekst } from '@/lib/firebase';
+import { settLyd, useLyd } from '@/lib/lyd';
 import { Avatar, Chip, Chips, Felt, Feilmelding, Knapp, Kort, Laster, Pille, Rad, Seksjon, Skjerm, T } from '@/ui/komponenter';
 import { avstand, profilFarger, useFarger } from '@/ui/tema';
 
@@ -29,6 +30,7 @@ export default function Mer() {
   const { loggUt, bruker } = useAuth();
   const familieId = useFamilieId();
   const { aktiv, lastBarn, settLastBarn, bytt } = useProfil();
+  const lyd = useLyd();
   const [redigerBarn, setRedigerBarn] = useState<Partial<Barn> | null>(null);
 
   if (barn.isPending || voksne.isPending) return <Laster />;
@@ -83,6 +85,13 @@ export default function Mer() {
             {barn.data?.map((b) => (
               <Chip key={b.id} tekst={b.navn} valgt={lastBarn === b.id} onPress={() => settLastBarn(b.id)} />
             ))}
+          </Chips>
+        </Kort>
+        <Kort>
+          <T fet>Lyd når barna fullfører en oppgave</T>
+          <Chips>
+            <Chip tekst="På" valgt={lyd} onPress={() => settLyd(true)} />
+            <Chip tekst="Av" valgt={!lyd} onPress={() => settLyd(false)} />
           </Chips>
         </Kort>
         <T dempet v="liten">

@@ -13,7 +13,7 @@ export default function BarnUker() {
 
   const mine = uker.filter((u) => u.barnId === barnId);
   const totalt = mine.reduce((s, u) => s + u.tjentOre, 0);
-  const stjerner = mine.reduce((s, u) => s + u.antallGodkjent, 0);
+  const stjerner = mine.reduce((s, u) => s + u.antallStjerner, 0);
   const denne = ukeStart();
 
   return (
@@ -33,7 +33,7 @@ export default function BarnUker() {
                 Uke {ukenummer(u.ukeStart)} · {ukeSpenn(u.ukeStart)}
               </T>
               <T dempet v="liten">
-                ⭐ {u.antallGodkjent}
+                ⭐ {u.antallStjerner}
                 {u.antallVenter ? ` · ${u.antallVenter} venter` : ''}
               </T>
             </View>

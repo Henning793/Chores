@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 
 import { useOppgaver } from '@/data/familie';
 import type { Oppgave, Utforelse } from '@/data/typer';
@@ -8,9 +9,12 @@ import { useUtforelseHandlinger, useUtforelser } from '@/data/utforelser';
 import { STANDARD_IKON } from '@/lib/ikoner';
 import { nedtelling, pauseIgjen, pauseMin, useNaa } from '@/lib/pause';
 import { kr } from '@/lib/penger';
-import { dagerPaRad } from '@/lib/stjerner';
+import { dunk, pling } from '@/lib/lyd';
+import { antallStjerner, dagerPaRad } from '@/lib/stjerner';
 import { dagFor, naarTekst, ukeStart, ukenummer } from '@/lib/uke';
 import { Chip, Chips, Felt, Knapp, Laster, Mynt, Pille, Rad, Seksjon, Skjerm, T, Tom } from '@/ui/komponenter';
+import { Feiring, FEIRING_VARIGHET, type FeiringStart } from '@/ui/feiring';
+import { Stjernehylle, type ViewRef } from '@/ui/stjernehylle';
 import { avstand, radius, useFarger } from '@/ui/tema';
 
 export default function BarnHjem() {
@@ -20,7 +24,11 @@ export default function BarnHjem() {
   const utforelser = useUtforelser();
   const { kryssAv, angre } = useUtforelseHandlinger();
   const [valgt, setValgt] = useState<{ oppgave: Oppgave; nyttForsokAv: string | null } | null>(null);
-  const [bekreftelse, setBekreftelse] = useState<string | null>(null);
+  const [feiringer, setFeiringer] = useState<FeiringStart[]>([]);
+  const rolig = useReducedMotion();
+  const rotRef = useRef<ViewRef>(null);
+  const ledigRef = useRef<ViewRef>(null);
+  const ruteRefs = useRef(new Map<string, ViewRef | null>());
   const mine = utforelser.data.filter((u) => u.barnId === barnId);
   // Oppdateres hvert sekund, så nedtellingen går og oppgaven låses opp av seg selv.
   const naa = useNaa(true);
@@ -31,7 +39,8 @@ export default function BarnHjem() {
   const denneUka = mine.filter((u) => u.ukeStart === uke);
   const tjent = denneUka.filter((u) => u.status === 'godkjent').reduce((s, u) => s + u.belopOre, 0);
   const venterOre = denneUka.filter((u) => u.status === 'venter').reduce((s, u) => s + u.belopOre, 0);
-  const stjerner = denneUka.filter((u) => u.status === 'godkjent').length;
+  // Stjerner som er på vei opp til hylla, vises først når de lander.
+  const stjerner = Math.max(0, antallStjerner(mine, barnId, uke) - feiringer.length);
   const pa_rad = dagerPaRad(mine);
   const iDag = dagFor();
   // Dagens avkrysninger, pluss eldre som venter eller er avvist uten nytt forsøk.
@@ -41,26 +50,49 @@ export default function BarnHjem() {
   );
   const oppgaveFor = (id: string) => oppgaver.data?.find((o) => o.id === id);
 
+  /** Finner midten av ruta, skjermen og den ledige plassen på hylla, og starter feiringen. */
+  function feir(oppgaveId: string) {
+    const rot = rotRef.current;
+    const rute = ruteRefs.current.get(oppgaveId);
+    const ledig = ledigRef.current;
+    if (rolig || !rot || !rute || !ledig) {
+      pling();
+      dunk('landet');
+      return;
+    }
+    rot.measureInWindow((rx, ry, rb, rh) => {
+      rute.measureInWindow((x, y, b, h) => {
+        ledig.measureInWindow((lx, ly, lb) => {
+          const start: FeiringStart = {
+            id: Date.now(),
+            fra: { x: x - rx + b / 2, y: y - ry + h / 2 },
+            midt: { x: rb / 2, y: rh * 0.42 },
+            til: { x: lx - rx + lb / 2, y: ly - ry + lb / 2, storrelse: lb },
+          };
+          setFeiringer((f) => [...f, start]);
+          setTimeout(() => setFeiringer((f) => f.filter((x) => x.id !== start.id)), FEIRING_VARIGHET);
+        });
+      });
+    });
+  }
+
   return (
-    <>
+    <View ref={rotRef} style={styles.rot} collapsable={false}>
       <Skjerm>
         <View style={[styles.hero, { backgroundColor: f.merke }]}>
-          <Text style={[styles.heroLiten, { color: f.paMerke }]}>Uke {ukenummer(uke)} · tjent så langt</Text>
-          <Text style={[styles.heroStor, { color: f.paMerke }]}>{kr(tjent)}</Text>
           <Text style={[styles.heroLiten, { color: f.paMerke }]}>
-            ⭐ {stjerner} {stjerner === 1 ? 'stjerne' : 'stjerner'}
-            {pa_rad > 1 ? ` · 🔥 ${pa_rad} dager på rad` : ''}
-            {venterOre > 0 ? ` · ${kr(venterOre)} venter` : ''}
+            Uke {ukenummer(uke)} · tjent så langt{pa_rad > 1 ? ` · 🔥 ${pa_rad} dager på rad` : ''}
           </Text>
-        </View>
-
-        {bekreftelse ? (
-          <View style={[styles.bekreft, { backgroundColor: f.okMyk }]}>
-            <T farge={f.ok} fet>
-              {bekreftelse}
-            </T>
+          <View style={styles.pottRad}>
+            <Pott ore={tjent} farge={f.paMerke} />
+            {venterOre > 0 ? (
+              <View style={styles.venter} accessibilityLabel={`${kr(venterOre)} venter på godkjenning`}>
+                <Text style={[styles.venterTekst, { color: f.paMerke }]}>⏳ +{kr(venterOre)}</Text>
+              </View>
+            ) : null}
           </View>
-        ) : null}
+          <Stjernehylle antall={stjerner} ledigRef={ledigRef} />
+        </View>
 
         <Seksjon>Hva har du gjort?</Seksjon>
         {oppgaver.data?.length ? (
@@ -68,6 +100,9 @@ export default function BarnHjem() {
             {oppgaver.data.map((o) => (
               <OppgaveRute
                 key={o.id}
+                ruteRef={(v) => {
+                  ruteRefs.current.set(o.id, v);
+                }}
                 oppgave={o}
                 pauseMs={pauseIgjen(o, barnId, mine, naa)}
                 onPress={() => setValgt({ oppgave: o, nyttForsokAv: null })}
@@ -98,27 +133,55 @@ export default function BarnHjem() {
         ))}
       </Skjerm>
 
+      {feiringer.map((s) => (
+        <Feiring key={s.id} start={s} />
+      ))}
+
       <KryssAvArk
         valgt={valgt}
         onLukk={() => setValgt(null)}
         onSend={(merknad) => {
           if (!valgt) return;
           kryssAv(barnId, valgt.oppgave, merknad, valgt.nyttForsokAv);
-          setBekreftelse(`Bra jobba! «${valgt.oppgave.tittel}» er sendt til godkjenning.`);
-          setTimeout(() => setBekreftelse(null), 4000);
           setValgt(null);
+          // Arket glir ned først, så smeller det.
+          const id = valgt.oppgave.id;
+          setTimeout(() => feir(id), 220);
         }}
       />
-    </>
+    </View>
   );
 }
 
-function OppgaveRute({ oppgave: o, pauseMs, onPress }: { oppgave: Oppgave; pauseMs: number; onPress: () => void }) {
+/** Beløpet i potten. Hopper litt når en voksen godkjenner og det øker. */
+function Pott({ ore, farge }: { ore: number; farge: string }) {
+  const skala = useSharedValue(1);
+  const forrige = useRef(ore);
+  useEffect(() => {
+    if (ore > forrige.current) skala.value = withSequence(withTiming(1.25, { duration: 120 }), withSpring(1, { damping: 8 }));
+    forrige.current = ore;
+  }, [ore, skala]);
+  const stil = useAnimatedStyle(() => ({ transform: [{ scale: skala.value }] }));
+  return <Animated.Text style={[styles.heroStor, { color: farge, transformOrigin: 'left center' }, stil]}>{kr(ore)}</Animated.Text>;
+}
+
+function OppgaveRute({
+  oppgave: o,
+  pauseMs,
+  onPress,
+  ruteRef,
+}: {
+  oppgave: Oppgave;
+  pauseMs: number;
+  onPress: () => void;
+  ruteRef: (v: ViewRef | null) => void;
+}) {
   const f = useFarger();
   const pauset = pauseMs > 0;
   const andel = pauset ? pauseMs / (pauseMin(o) * 60_000) : 0;
   return (
     <Pressable
+      ref={ruteRef}
       onPress={onPress}
       disabled={pauset}
       accessibilityRole="button"
@@ -232,9 +295,18 @@ function KryssAvArk({
             </>
           ) : null}
           <Felt value={merknad} onChangeText={setMerknad} placeholder="Skriv noe til mamma eller pappa …" maxLength={120} />
-          <Knapp tittel="Ferdig! Send til godkjenning" onPress={() => onSend(merknad || null)} />
+          <Pressable
+            onPress={() => onSend(merknad || null)}
+            accessibilityRole="button"
+            accessibilityLabel="Ferdig"
+            style={({ pressed }) => [styles.ferdig, { backgroundColor: f.ok, opacity: pressed ? 0.85 : 1 }]}>
+            <View style={styles.hake}>
+              <Text style={styles.hakeTegn}>✓</Text>
+            </View>
+            <Text style={styles.ferdigTekst}>Ferdig!</Text>
+          </Pressable>
           <T dempet sentrert v="liten">
-            Du får {kr(o?.belopOre)} og en ⭐ når det er godkjent
+            Du får ⭐ nå og {kr(o?.belopOre)} når en voksen har godkjent
           </T>
         </View>
       </KeyboardAvoidingView>
@@ -243,10 +315,17 @@ function KryssAvArk({
 }
 
 const styles = StyleSheet.create({
+  rot: { flex: 1 },
+  pottRad: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: avstand.s },
+  venter: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, backgroundColor: 'rgba(255,255,255,0.2)' },
+  venterTekst: { fontWeight: '800', fontSize: 14, fontVariant: ['tabular-nums'] },
+  ferdig: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: avstand.m, borderRadius: 18, padding: 14 },
+  hake: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
+  hakeTegn: { color: '#FFFFFF', fontSize: 24, fontWeight: '800' },
+  ferdigTekst: { color: '#FFFFFF', fontSize: 20, fontWeight: '800' },
   hero: { borderRadius: radius.l, padding: avstand.l, gap: avstand.xs },
   heroLiten: { fontSize: 14, fontWeight: '600', opacity: 0.9 },
   heroStor: { fontSize: 40, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  bekreft: { borderRadius: radius.s, padding: avstand.m },
   rutenett: { flexDirection: 'row', flexWrap: 'wrap', gap: avstand.m },
   rute: {
     flexBasis: '30%',

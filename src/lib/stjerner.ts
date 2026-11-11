@@ -13,3 +13,11 @@ export function dagerPaRad(utforelser: Utforelse[], na: Date = new Date()): numb
   }
   return antall;
 }
+
+/**
+ * Stjerner barnet har fått i en uke. Barnet får stjerna med en gang det krysser av,
+ * og den blir værende selv om oppgaven avvises. Pengene krever fortsatt godkjenning.
+ */
+export function antallStjerner(utforelser: Utforelse[], barnId: string, uke: string): number {
+  return utforelser.filter((u) => u.barnId === barnId && u.ukeStart === uke).length;
+}
